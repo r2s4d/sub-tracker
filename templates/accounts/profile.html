@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Настройки{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Настройки</h1>
+    <p>Куда и когда присылать напоминания, сколько вы готовы тратить в месяц.</p>
+  </div>
+</div>
+
+<div class="panel" style="max-width: 560px">
+  <div class="panel-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% include 'partials/form_fields.html' with form=form %}
+      <p class="form-text mt-n2 mb-3">Сейчас письма уходят на {{ request.user.profile.effective_email|default:'— почта не указана' }}.</p>
+      <button type="submit" class="btn btn-primary">Сохранить</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

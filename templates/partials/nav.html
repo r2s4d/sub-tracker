@@ -1,0 +1,30 @@
+{% with ns=request.resolver_match.namespace url=request.resolver_match.url_name %}
+<a class="brand" href="{% url 'home' %}">
+  <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+  Подписки
+</a>
+
+<nav aria-label="Основная навигация">
+  <ul class="nav-app">
+    <li><a href="{% url 'subscriptions:list' %}" {% if ns == 'subscriptions' and url in 'list,detail,create,update,delete' %}aria-current="page"{% endif %}>Мои подписки</a></li>
+  </ul>
+
+  <p class="nav-group-title">Справочники</p>
+  <ul class="nav-app mt-0">
+    <li><a href="{% url 'subscriptions:service-list' %}" {% if url|slice:':7' == 'service' %}aria-current="page"{% endif %}>Сервисы</a></li>
+    <li><a href="{% url 'subscriptions:paymentmethod-list' %}" {% if url|slice:':13' == 'paymentmethod' %}aria-current="page"{% endif %}>Способы оплаты</a></li>
+    <li><a href="{% url 'subscriptions:tag-list' %}" {% if url|slice:':3' == 'tag' %}aria-current="page"{% endif %}>Теги</a></li>
+  </ul>
+</nav>
+
+<div class="sidebar-footer">
+  <div class="fw-semibold text-truncate">{{ request.user.username }}</div>
+  <div class="d-flex gap-3 mt-1">
+    <a href="{% url 'profile' %}" {% if url == 'profile' %}aria-current="page"{% endif %}>Настройки</a>
+    <form method="post" action="{% url 'logout' %}" class="m-0">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-link p-0 align-baseline">Выйти</button>
+    </form>
+  </div>
+</div>
+{% endwith %}

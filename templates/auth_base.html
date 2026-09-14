@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block body %}
+<main class="auth">
+  <div class="auth-card">
+    <span class="brand">
+      <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+      Подписки
+    </span>
+    {% include 'partials/messages.html' %}
+    <div class="panel">
+      <div class="panel-body p-4">
+        {% block auth_content %}{% endblock %}
+      </div>
+    </div>
+    {% block auth_footer %}{% endblock %}
+  </div>
+</main>
+{% endblock %}
