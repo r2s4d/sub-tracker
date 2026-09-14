@@ -8,7 +8,6 @@
 который скоро закончится (для напоминания).
 """
 
-import calendar
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -19,17 +18,13 @@ from django.db import transaction
 from subscriptions.models import (
     BillingPeriod, BillingType, Payment, PaymentMethod, Service, Subscription, Tag,
 )
+from subscriptions.services.billing import BillingCalculatorFactory
+from subscriptions.services.dates import add_months
 
 User = get_user_model()
 
 DEMO_USERNAME = 'demo'
 DEMO_PASSWORD = 'demo12345'
-
-
-def add_months(day, months):
-    month_index = day.month - 1 + months
-    year, month = day.year + month_index // 12, month_index % 12 + 1
-    return date(year, month, min(day.day, calendar.monthrange(year, month)[1]))
 
 
 class Command(BaseCommand):
@@ -74,13 +69,12 @@ class Command(BaseCommand):
                 billing_type=billing_type, start_date=start, payment_method=method,
             )
             subscription.tags.set([tags[name] for name in tag_names])
-            step = 12 if billing_type == BillingType.YEARLY else 1
-            payments, paid_at = [], start
-            while paid_at <= today:
-                payments.append(Payment(subscription=subscription, amount=subscription.price,
-                                        paid_at=paid_at, payment_method=method))
-                paid_at = add_months(start, step * (len(payments)))
-            Payment.objects.bulk_create(payments)
+            # История платежей — по тем же датам, что считает калькулятор
+            calculator = BillingCalculatorFactory.create(subscription)
+            Payment.objects.bulk_create(
+                Payment(subscription=subscription, amount=subscription.price, paid_at=paid_at, payment_method=method)
+                for paid_at in calculator.charge_dates(start, today)
+            )
 
         # Пробный период, который заканчивается через 2 дня — для напоминания
         trial = Subscription.objects.create(
