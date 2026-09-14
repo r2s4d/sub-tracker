@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Теги{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Теги</h1>
+    <p>Свои метки для подписок: по ним удобно отбирать, например, семейные или те, что можно отменить.</p>
+  </div>
+  <a href="{% url 'subscriptions:tag-create' %}" class="btn btn-primary">Добавить тег</a>
+</div>
+
+<div class="panel">
+  {% if tags %}
+  <ul class="ledger">
+    {% for tag in tags %}
+    <li class="ledger-row ref-row">
+      <div><span class="tag-pill">{{ tag.name }}</span></div>
+      <div class="ledger-usage">
+        {% if tag.subscription_count %}
+        <a href="{% url 'subscriptions:list' %}?tag={{ tag.pk }}">{{ tag.usage_label }}</a>
+        {% else %}Не используется{% endif %}
+      </div>
+      <div class="ledger-actions">
+        <a href="{% url 'subscriptions:tag-update' tag.pk %}" class="btn btn-outline-secondary btn-sm">Изменить</a>
+        <a href="{% url 'subscriptions:tag-delete' tag.pk %}" class="btn btn-link btn-sm btn-link-danger">Удалить</a>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="empty">
+    <h2>Тегов пока нет</h2>
+    <p>Создайте тег, например «семья» или «работа», и отмечайте им подписки, чтобы быстро находить нужные.</p>
+    <a href="{% url 'subscriptions:tag-create' %}" class="btn btn-primary">Добавить тег</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}Сервисы{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Сервисы</h1>
+    <p>На что можно оформить подписку: общий каталог и сервисы, которые вы добавили сами.</p>
+  </div>
+  <a href="{% url 'subscriptions:service-create' %}" class="btn btn-primary">Добавить свой сервис</a>
+</div>
+
+<form method="get" class="ref-search" role="search">
+  <label for="service-q" class="visually-hidden">Название сервиса</label>
+  <input type="search" name="q" id="service-q" value="{{ q }}" class="form-control" placeholder="Найти по названию">
+  <button type="submit" class="btn btn-outline-secondary">Найти</button>
+  {% if q %}<a href="{% url 'subscriptions:service-list' %}" class="btn btn-link">Сбросить</a>{% endif %}
+</form>
+
+<h2 class="section-title mt-0">Мои сервисы</h2>
+<div class="panel">
+  {% if own_services %}
+  <ul class="ledger">
+    {% for service in own_services %}
+    <li class="ledger-row ref-row" style="--cat-color: {{ service.category.color }}">
+      <div>
+        <div class="ledger-title">{{ service.name }}</div>
+        <div class="ledger-meta">
+          <span class="cat-dot" aria-hidden="true"></span>{{ service.category.name }}
+          {% if service.website %}<span class="ms-2"><a href="{{ service.website }}" target="_blank" rel="noopener noreferrer">сайт</a></span>{% endif %}
+        </div>
+      </div>
+      <div class="ledger-usage">{% if service.subscription_count %}{{ service.usage_label }}{% else %}Не используется{% endif %}</div>
+      <div class="ledger-actions">
+        <a href="{% url 'subscriptions:service-update' service.pk %}" class="btn btn-outline-secondary btn-sm">Изменить</a>
+        <a href="{% url 'subscriptions:service-delete' service.pk %}" class="btn btn-link btn-sm btn-link-danger">Удалить</a>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% elif q %}
+  <div class="empty">
+    <p class="mb-0">Среди ваших сервисов нет «{{ q }}».</p>
+  </div>
+  {% else %}
+  <div class="empty">
+    <h2>Своих сервисов пока нет</h2>
+    <p>Обычно хватает каталога ниже. Добавляйте свой сервис, только если нужного в каталоге нет, — например, местный спортзал или домашний интернет.</p>
+    <a href="{% url 'subscriptions:service-create' %}" class="btn btn-outline-secondary">Добавить свой сервис</a>
+  </div>
+  {% endif %}
+</div>
+
+<h2 class="section-title">Каталог</h2>
+<div class="panel">
+  <div class="panel-body">
+    {% if catalog %}
+    <div class="catalog">
+      {% regroup catalog by category as groups %}
+      {% for group in groups %}
+      <section class="catalog-group" style="--cat-color: {{ group.grouper.color }}">
+        <h3><span class="cat-dot" aria-hidden="true"></span>{{ group.grouper.name }}</h3>
+        <ul>
+          {% for service in group.list %}
+          <li>
+            <span>{{ service.name }}</span>
+            {% if service.website %}<a href="{{ service.website }}" target="_blank" rel="noopener noreferrer" aria-label="Сайт {{ service.name }}">сайт</a>{% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+      </section>
+      {% endfor %}
+    </div>
+    {% elif q %}
+    <p class="text-secondary mb-0">В каталоге нет «{{ q }}». Если сервис нужен, добавьте его как свой.</p>
+    {% else %}
+    <p class="text-secondary mb-0">Каталог пуст.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

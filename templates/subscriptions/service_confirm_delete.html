@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Удалить сервис{% endblock %}
+
+{% block content %}
+{% if subscription_count %}
+<div class="page-head">
+  <div>
+    <h1>Сервис нельзя удалить</h1>
+    <p>«{{ object }}» используется {{ usage_label }}.</p>
+  </div>
+</div>
+
+<div class="panel" style="max-width: 560px">
+  <div class="panel-body">
+    <p class="mb-3">Сначала переведите эти подписки на другой сервис или удалите их — после этого сервис можно будет удалить.</p>
+    <div class="d-flex gap-2">
+      <a href="{% url 'subscriptions:list' %}" class="btn btn-outline-secondary">Открыть подписки</a>
+      <a href="{{ cancel_url }}" class="btn btn-link">Вернуться к сервисам</a>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="page-head">
+  <div>
+    <h1>Удалить сервис?</h1>
+    <p>«{{ object }}» будет удалён без возможности восстановления.</p>
+  </div>
+</div>
+
+<div class="panel" style="max-width: 560px">
+  <div class="panel-body">
+    <p class="mb-3">Сервис не используется ни в одной подписке.</p>
+    <form method="post" class="d-flex gap-2">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger">Удалить</button>
+      <a href="{{ cancel_url }}" class="btn btn-outline-secondary">Отмена</a>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

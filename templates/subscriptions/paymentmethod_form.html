@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}{% if object %}Изменить способ оплаты{% else %}Новый способ оплаты{% endif %}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    {% if object %}
+    <h1>Изменить способ оплаты</h1>
+    <p>Новое название сразу появится во всех подписках, привязанных к «{{ object }}».</p>
+    {% else %}
+    <h1>Новый способ оплаты</h1>
+    <p>Карта или счёт, с которого списываются деньги за подписки.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="panel" style="max-width: 560px">
+  <div class="panel-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
+      {% include 'partials/form_fields.html' with form=form %}
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">{% if object %}Сохранить{% else %}Добавить способ оплаты{% endif %}</button>
+        <a href="{{ cancel_url }}" class="btn btn-outline-secondary">Отмена</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
