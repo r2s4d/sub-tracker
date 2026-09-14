@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% comment %}
+Общая страница подтверждения удаления.
+Контекст: object, cancel_url, а также необязательные delete_title и delete_warning.
+{% endcomment %}
+{% block title %}Удаление{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ delete_title|default:'Удалить запись?' }}</h1>
+    <p>«{{ object }}» будет удалено без возможности восстановления.</p>
+  </div>
+</div>
+
+<div class="panel" style="max-width: 560px">
+  <div class="panel-body">
+    {% if delete_warning %}<p class="mb-3">{{ delete_warning }}</p>{% endif %}
+    <form method="post" class="d-flex gap-2">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger">Удалить</button>
+      <a href="{{ cancel_url }}" class="btn btn-outline-secondary">Отмена</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

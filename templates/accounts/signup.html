@@ -1,0 +1,17 @@
+{% extends 'auth_base.html' %}
+{% block title %}Регистрация{% endblock %}
+
+{% block auth_content %}
+<h1 class="h2 mb-1">Регистрация</h1>
+<p class="text-secondary mb-4">Аккаунт нужен, чтобы подписки были видны только вам.</p>
+
+<form method="post" novalidate>
+  {% csrf_token %}
+  {% include 'partials/form_fields.html' with form=form %}
+  <button type="submit" class="btn btn-primary w-100 mt-2">Создать аккаунт</button>
+</form>
+{% endblock %}
+
+{% block auth_footer %}
+<p class="mt-3 text-secondary">Уже есть аккаунт? <a href="{% url 'login' %}">Войти</a></p>
+{% endblock %}

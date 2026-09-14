@@ -1,0 +1,30 @@
+{% comment %}
+Выводит поля формы в разметке Bootstrap.
+Использование: {% include 'partials/form_fields.html' with form=form %}
+Для вывода части полей: {% include 'partials/form_fields.html' with fields=some_list %}
+{% endcomment %}
+{% if form.non_field_errors %}
+<div class="flash flash-error" role="alert">
+  {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+</div>
+{% endif %}
+
+{% for field in fields|default:form.visible_fields %}
+  {% if field.widget_type == 'checkbox' %}
+  <div class="form-check mb-3">
+    {{ field }}
+    <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {% if field.help_text %}<div class="form-text">{{ field.help_text|safe }}</div>{% endif %}
+    {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+  </div>
+  {% else %}
+  <div class="mb-3">
+    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% if not field.field.required %} <span class="text-secondary fw-normal">(необязательно)</span>{% endif %}</label>
+    {{ field }}
+    {% if field.help_text %}<div class="form-text">{{ field.help_text|safe }}</div>{% endif %}
+    {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+  </div>
+  {% endif %}
+{% endfor %}
+
+{% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}

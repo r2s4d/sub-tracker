@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}{% if object %}Изменить тег{% else %}Новый тег{% endif %}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    {% if object %}
+    <h1>Изменить тег</h1>
+    <p>Новое название появится у всех подписок с тегом «{{ object }}».</p>
+    {% else %}
+    <h1>Новый тег</h1>
+    <p>Короткая метка, чтобы группировать подписки по своему признаку.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="panel" style="max-width: 560px">
+  <div class="panel-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% include 'partials/form_fields.html' with form=form %}
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">{% if object %}Сохранить{% else %}Добавить тег{% endif %}</button>
+        <a href="{{ cancel_url }}" class="btn btn-outline-secondary">Отмена</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
