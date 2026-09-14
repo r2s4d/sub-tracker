@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Django
+staticfiles/
+media/
+*.sqlite3
+
+# Секреты
+.env
+
+# IDE
+.idea/
+.vscode/
+
+# Личные файлы владельца (не часть проекта)
+DECISIONS.md
+PROJECT_SPEC.md
+CLAUDE.md
+.claude/
