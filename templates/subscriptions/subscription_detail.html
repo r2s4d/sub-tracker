@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% load money %}
+{% block title %}{{ subscription.display_name }}{% endblock %}
+
+{% block content %}
+{% with category=subscription.service.category %}
+<div class="page-head">
+  <div>
+    <p class="mt-0 mb-1"><a href="{% url 'subscriptions:list' %}">Мои подписки</a></p>
+    <h1 class="mb-1">{{ subscription.display_name }}</h1>
+    <div class="d-flex flex-wrap align-items-center gap-2 text-secondary" style="--cat-color: {{ category.color }}">
+      <span><span class="cat-dot" aria-hidden="true"></span>{{ category.name }}</span>
+      {% if not subscription.is_active %}
+      <span class="status status-off">отключена</span>
+      {% elif subscription.billing_type == 'trial' %}
+      <span class="status status-trial">пробный до {{ subscription.trial_end_date|date:'d.m.Y' }}</span>
+      {% else %}
+      <span class="status">активна</span>
+      {% endif %}
+    </div>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'subscriptions:update' subscription.pk %}" class="btn btn-outline-secondary">Изменить</a>
+    <a href="{% url 'subscriptions:delete' subscription.pk %}" class="btn btn-outline-danger">Удалить</a>
+  </div>
+</div>
+
+<div class="subscription-detail">
+  <section class="panel" aria-labelledby="facts-title">
+    <div class="panel-head"><h2 id="facts-title">Подписка</h2></div>
+    <div class="panel-body">
+      <p class="mb-3">
+        <span class="money-lg">{{ subscription.price|rub_html }}</span>
+        <span class="text-secondary">
+          {% if subscription.billing_type == 'monthly' %}в месяц
+          {% elif subscription.billing_type == 'yearly' %}в год
+          {% elif subscription.billing_period_after_trial == 'yearly' %}в год после пробного периода
+          {% else %}в месяц после пробного периода{% endif %}
+        </span>
+      </p>
+      <dl class="subscription-facts">
+        <dt>Тип оплаты</dt>
+        <dd>{{ subscription.get_billing_type_display }}</dd>
+        <dt>Дата начала</dt>
+        <dd>{{ subscription.start_date|date:'d.m.Y' }}</dd>
+        {% if subscription.billing_type == 'trial' %}
+        <dt>Конец пробного периода</dt>
+        <dd>{{ subscription.trial_end_date|date:'d.m.Y' }}</dd>
+        {% endif %}
+        <dt>Способ оплаты</dt>
+        <dd>{{ subscription.payment_method|default:'не указан' }}</dd>
+        <dt>Теги</dt>
+        <dd>
+          {% for tag in tags %}<span class="tag-pill">{{ tag.name }}</span> {% empty %}нет{% endfor %}
+        </dd>
+        {% if subscription.notes %}
+        <dt>Заметки</dt>
+        <dd class="subscription-notes">{{ subscription.notes|linebreaksbr }}</dd>
+        {% endif %}
+      </dl>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="payments-title">
+    <div class="panel-head">
+      <h2 id="payments-title">Платежи</h2>
+      <span class="text-secondary small">Всего оплачено {{ total_paid|rub_html }}</span>
+    </div>
+
+    <form method="post" action="{% url 'subscriptions:mark-paid' subscription.pk %}" class="panel-body subscription-pay" novalidate>
+      {% csrf_token %}
+      <div>
+        <label class="form-label small" for="{{ payment_form.amount.id_for_label }}">Сумма, ₽</label>
+        {{ payment_form.amount }}
+      </div>
+      <div>
+        <label class="form-label small" for="{{ payment_form.paid_at.id_for_label }}">Дата списания</label>
+        {{ payment_form.paid_at }}
+      </div>
+      <div>
+        <label class="form-label small" for="{{ payment_form.payment_method.id_for_label }}">Способ оплаты</label>
+        {{ payment_form.payment_method }}
+      </div>
+      <div class="subscription-pay-submit">
+        <button type="submit" class="btn btn-primary">Отметить оплату</button>
+      </div>
+    </form>
+
+    {% if payments %}
+    <ul class="ledger border-top subscription-payments">
+      {% for payment in payments %}
+      <li class="ledger-row subscription-payment">
+        <div>
+          <div class="fw-semibold">{{ payment.paid_at|date:'d.m.Y' }}</div>
+          <div class="ledger-meta">{{ payment.payment_method|default:'способ оплаты не указан' }}</div>
+        </div>
+        <div class="ledger-amount">{{ payment.amount|rub_html }}</div>
+        <form method="post" action="{% url 'subscriptions:payment-delete' payment.pk %}" class="m-0"
+              onsubmit="return confirm('Удалить платёж на {{ payment.amount|rub|escapejs }} от {{ payment.paid_at|date:'d.m.Y' }}?')">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-link btn-sm btn-link-danger p-0">Удалить</button>
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="empty border-top pt-4">
+      <p class="mb-0">Платежей пока нет. Отметьте оплату, когда деньги спишутся, — сумма сохранится в истории, даже если цена потом изменится.</p>
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endwith %}
+{% endblock %}

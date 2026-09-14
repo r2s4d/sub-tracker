@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% block title %}{% if object %}Изменение подписки{% else %}Новая подписка{% endif %}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    {% if object %}
+    <h1>Изменение подписки</h1>
+    <p>{{ object.display_name }}</p>
+    {% else %}
+    <h1>Новая подписка</h1>
+    <p>Сервис, цена и как часто за него платите.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="panel" style="max-width: 640px">
+  <div class="panel-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+      <div class="flash flash-error" role="alert">
+        {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+      </div>
+      {% endif %}
+
+      <section class="form-section">
+        <h2 class="form-section-title">Сервис</h2>
+        {% include 'partials/form_fields.html' with form=form.service_section %}
+        <p class="form-text mt-n2 mb-0">
+          Нет нужного сервиса? <a href="{% url 'subscriptions:service-create' %}">Добавьте свой</a>
+        </p>
+      </section>
+
+      <section class="form-section">
+        <h2 class="form-section-title">Оплата</h2>
+        {% include 'partials/form_fields.html' with form=form.billing_section %}
+      </section>
+
+      <section class="form-section" id="trial-section">
+        <h2 class="form-section-title">Пробный период</h2>
+        {% include 'partials/form_fields.html' with form=form.trial_section %}
+      </section>
+
+      <section class="form-section">
+        <h2 class="form-section-title">Дополнительно</h2>
+
+        <fieldset class="mb-3">
+          <legend class="form-label fs-6">{{ form.tags.label }} <span class="text-secondary fw-normal">(необязательно)</span></legend>
+          {% if form.tags.field.queryset.exists %}
+          <div class="subscription-tags">
+            {% for checkbox in form.tags %}
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="{{ checkbox.data.name }}" value="{{ checkbox.data.value }}" id="{{ checkbox.id_for_label }}"{% if checkbox.data.selected %} checked{% endif %}>
+              <label class="form-check-label" for="{{ checkbox.id_for_label }}">{{ checkbox.choice_label }}</label>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="form-text mb-0">Тегов пока нет. <a href="{% url 'subscriptions:tag-create' %}">Создайте тег</a>, чтобы группировать подписки.</p>
+          {% endif %}
+          {% for error in form.tags.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        </fieldset>
+
+        {% include 'partials/form_fields.html' with form=form.extra_section %}
+      </section>
+
+      <div class="d-flex gap-2 mt-4">
+        <button type="submit" class="btn btn-primary">{% if object %}Сохранить изменения{% else %}Добавить подписку{% endif %}</button>
+        <a href="{% if object %}{% url 'subscriptions:detail' object.pk %}{% else %}{% url 'subscriptions:list' %}{% endif %}" class="btn btn-outline-secondary">Отмена</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Поля пробного периода нужны только для billing_type = trial. Без JS видны всегда.
+  (function () {
+    var select = document.getElementById('{{ form.billing_type.id_for_label }}');
+    var section = document.getElementById('trial-section');
+    if (!select || !section) return;
+    function sync() { section.hidden = select.value !== 'trial'; }
+    select.addEventListener('change', sync);
+    sync();
+  })();
+</script>
+{% endblock %}

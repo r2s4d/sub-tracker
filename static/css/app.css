@@ -254,7 +254,12 @@ a { text-underline-offset: 3px; }
 
 .form-label { font-weight: 500; margin-bottom: .3rem; }
 .form-text { color: var(--st-muted); }
-.form-control, .form-select { border-color: var(--st-line-strong); padding: .55rem .75rem; }
+.form-control, .form-select {
+  /* Bootstrap берёт фон полей из --bs-body-bg (у нас серый фон страницы) */
+  background-color: var(--st-surface);
+  border-color: var(--st-line-strong);
+  padding: .55rem .75rem;
+}
 .form-control:focus, .form-select:focus { border-color: var(--st-accent); }
 
 .form-section + .form-section {
@@ -323,3 +328,86 @@ a { text-underline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* ---------- Справочники: способы оплаты, теги, сервисы ---------- */
+
+.ledger-actions { display: flex; gap: .5rem; justify-content: flex-end; }
+.ledger-usage { color: var(--st-muted); font-size: .88rem; }
+
+@media (min-width: 768px) {
+  .ledger-row.ref-row { grid-template-columns: minmax(0, 1fr) 10rem auto; }
+}
+
+.ref-search { display: flex; gap: .5rem; max-width: 420px; margin-bottom: 1.5rem; }
+
+.section-title { font-size: 1.05rem; margin: 2rem 0 .75rem; }
+
+/* Каталог: компактные колонки по категориям */
+.catalog { columns: 3 15rem; column-gap: 2rem; }
+.catalog-group { break-inside: avoid; margin-bottom: 1.25rem; }
+.catalog-group h3 { font-size: .95rem; margin-bottom: .4rem; }
+.catalog-group ul { list-style: none; padding: 0; margin: 0; }
+.catalog-group li { padding: .15rem 0; display: flex; justify-content: space-between; gap: .75rem; }
+.catalog-group li a { color: var(--st-muted); font-size: .85rem; white-space: nowrap; }
+
+/* ---------- Подписки: фильтры, строки списка, карточка подписки ---------- */
+
+.subscription-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem;
+  margin-bottom: 1rem;
+}
+.subscription-filters .form-select { min-width: 10rem; }
+
+.subscription-main .ledger-title { margin-right: .4rem; }
+.subscription-main .status { vertical-align: .1em; margin-right: .25rem; }
+.subscription-tags-row { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .35rem; }
+
+/* На узком экране категория уходит под название, сумма — справа на две строки */
+@media (max-width: 767.98px) {
+  .subscription-row .subscription-cat { grid-column: 1; grid-row: 2; }
+  .subscription-row .ledger-amount { grid-column: 2; grid-row: 1 / span 2; }
+}
+
+.subscription-detail { display: grid; gap: 1.25rem; align-items: start; }
+@media (min-width: 992px) {
+  .subscription-detail { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+}
+
+.subscription-facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: .55rem 1.25rem;
+  margin: 0;
+}
+.subscription-facts dt { font-weight: 500; color: var(--st-muted); }
+.subscription-facts dd { margin: 0; }
+
+.subscription-pay {
+  display: grid;
+  gap: .75rem;
+  align-items: end;
+}
+@media (min-width: 576px) {
+  /* Две строки: сумма + дата, затем карта + кнопка — поля не обрезаются */
+  .subscription-pay { grid-template-columns: 1fr 1fr; }
+}
+.subscription-pay .form-label { margin-bottom: .2rem; }
+
+/* История платежей: без полосы категории (она одна на всю подписку) и с ограниченной высотой */
+.subscription-payments { max-height: 30rem; overflow-y: auto; }
+.subscription-payments .ledger-row { padding-left: 1.5rem; }
+.subscription-payments .ledger-row::before { content: none; }
+.subscription-payments .btn-link-danger { color: var(--st-muted); text-decoration: none; }
+.subscription-payments .btn-link-danger:hover,
+.subscription-payments .btn-link-danger:focus-visible { color: var(--st-danger); text-decoration: underline; }
+
+.subscription-payment { grid-template-columns: minmax(0, 1fr) auto auto; }
+@media (min-width: 768px) {
+  .subscription-payment { grid-template-columns: minmax(0, 1fr) 9rem 5rem; }
+}
+.subscription-payment form { text-align: right; }
+
+.subscription-tags { display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; }
