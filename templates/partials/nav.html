@@ -6,6 +6,7 @@
 
 <nav aria-label="Основная навигация">
   <ul class="nav-app">
+    <li><a href="{% url 'subscriptions:dashboard' %}" {% if url == 'dashboard' %}aria-current="page"{% endif %}>Обзор</a></li>
     <li><a href="{% url 'subscriptions:list' %}" {% if ns == 'subscriptions' and url in 'list,detail,create,update,delete' %}aria-current="page"{% endif %}>Мои подписки</a></li>
   </ul>
 

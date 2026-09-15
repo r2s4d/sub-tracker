@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+{% load money ru %}
+{% block title %}Обзор{% endblock %}
+
+{% block content %}
+{% with d=dashboard s=dashboard.summary %}
+
+{% if not d.has_subscriptions %}
+<div class="page-head"><div><h1>Обзор</h1></div></div>
+<section class="panel">
+  <div class="empty">
+    <h2>Здесь появятся ваши расходы</h2>
+    <p>Добавьте подписки — и увидите, сколько уходит в месяц и в год, на что больше всего и что спишется в ближайшие дни.</p>
+    <a href="{% url 'subscriptions:create' %}" class="btn btn-primary">Добавить подписку</a>
+  </div>
+</section>
+{% else %}
+
+{# Главное на странице — сумма в месяц. Остальное подчинено ей. #}
+<section class="dash-hero" aria-labelledby="hero-title">
+  <div class="dash-hero-main">
+    <h1 id="hero-title" class="dash-hero-label">Подписки обходятся в месяц</h1>
+    <p class="dash-hero-amount">{{ s.monthly_total|rub_html }}</p>
+    <p class="dash-hero-sub">
+      {{ s.yearly_total|rub_html }} в год
+      <span class="dash-hero-sep" aria-hidden="true"></span>
+      {{ s.active_count }} {{ s.active_count|plural_ru:'активная подписка,активные подписки,активных подписок' }}
+    </p>
+    {% if s.trial_count %}
+    <p class="dash-hero-note">
+      <span class="status status-trial">пробный период</span>
+      Сюда входит {{ s.trial_monthly|rub }} в месяц за подписки на пробном периоде — если их не отменить.
+    </p>
+    {% endif %}
+  </div>
+
+  <div class="dash-budget">
+    {% if s.budget %}
+      <div class="d-flex justify-content-between align-items-baseline gap-3">
+        <span class="fw-semibold">Бюджет на месяц</span>
+        <span>{{ s.budget|rub_html }}</span>
+      </div>
+      <div class="meter {% if s.budget_ratio > 1 %}is-over{% endif %}" role="meter" aria-valuemin="0" aria-valuemax="100"
+           aria-valuenow="{% widthratio s.monthly_total s.budget 100 %}" aria-label="Использовано бюджета">
+        <span style="width: {% if s.budget_ratio > 1 %}100{% else %}{% widthratio s.monthly_total s.budget 100 %}{% endif %}%"></span>
+      </div>
+      <p class="dash-budget-caption">
+        {% if s.budget_ratio > 1 %}Больше бюджета на {{ s.budget_over|rub }}{% else %}Остаётся {{ s.budget_left|rub }}{% endif %}
+      </p>
+    {% else %}
+      <span class="fw-semibold">Бюджет не задан</span>
+      <p class="dash-budget-caption">Укажите, сколько готовы тратить в месяц, — здесь появится шкала.</p>
+      <a href="{% url 'profile' %}">Задать бюджет</a>
+    {% endif %}
+  </div>
+</section>
+
+<div class="dash-grid">
+  <section class="panel" aria-labelledby="cat-title">
+    <div class="panel-head">
+      <h2 id="cat-title">Куда уходят деньги</h2>
+      <span class="text-secondary small">в месяц</span>
+    </div>
+    <div class="panel-body dash-categories">
+      <div class="dash-doughnut">
+        <canvas id="chart-categories" role="img"
+                aria-label="Расходы по категориям: {% for c in d.by_category %}{{ c.name }} {{ c.monthly|rub }} ({{ c.share }}%){% if not forloop.last %}, {% endif %}{% endfor %}"></canvas>
+      </div>
+      {# Легенда — это и есть таблица значений: цвет никогда не единственный носитель смысла #}
+      <ul class="legend-ledger">
+        {% for c in d.by_category %}
+        <li style="--cat-color: {{ c.color }}">
+          <a href="{% url 'subscriptions:list' %}?category={{ c.slug }}" class="legend-name">
+            <span class="cat-dot" aria-hidden="true"></span>{{ c.name }}
+          </a>
+          <span class="legend-share">{{ c.share }}%</span>
+          <span class="legend-amount">{{ c.monthly|rub_html }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="upcoming-title">
+    <div class="panel-head">
+      <h2 id="upcoming-title">Ближайшие списания</h2>
+      <span class="text-secondary small">30 дней</span>
+    </div>
+    {% if d.upcoming %}
+    <ul class="ledger">
+      {% for r in d.upcoming %}
+      <li class="ledger-row dash-upcoming-row" style="--cat-color: {{ r.subscription.service.category.color }}">
+        <div>
+          <a class="ledger-title" href="{% url 'subscriptions:detail' r.subscription.pk %}">{{ r.subscription.display_name }}</a>
+          <div class="ledger-meta">
+            {% if r.is_trial_ending %}<span class="status status-trial">конец пробного</span>{% endif %}
+            {{ r.event_date|date:'j E' }}
+          </div>
+        </div>
+        <div class="dash-when {% if r.days_left <= 1 %}is-soon{% endif %}">
+          {{ r.days_left|days_left }}
+        </div>
+        <div class="ledger-amount">{{ r.amount|rub_html }}</div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="empty"><p class="mb-0">В ближайшие 30 дней списаний нет.</p></div>
+    {% endif %}
+  </section>
+
+  <section class="panel dash-wide" aria-labelledby="months-title">
+    <div class="panel-head">
+      <h2 id="months-title">Расходы по месяцам</h2>
+      <div class="dash-line-key small text-secondary" aria-hidden="true">
+        <span><i class="key-solid"></i>оплачено</span>
+        <span><i class="key-dashed"></i>по плану</span>
+      </div>
+    </div>
+    <div class="panel-body">
+      <div class="dash-line">
+        <canvas id="chart-months" role="img"
+                aria-label="Оплачено по месяцам за год. Подробные значения — в таблице под графиком."></canvas>
+      </div>
+      <details class="dash-table">
+        <summary>Показать таблицей</summary>
+        <div class="table-responsive">
+          <table class="table table-sm mb-0">
+            <thead><tr><th scope="col">Месяц</th><th scope="col" class="text-end">Оплачено</th><th scope="col" class="text-end">По плану</th></tr></thead>
+            <tbody>
+              {% for p in d.months %}
+              <tr>
+                <td>{{ p.month|date:'F Y' }}</td>
+                <td class="text-end">{% if p.actual is not None %}{{ p.actual|rub }}{% else %}—{% endif %}</td>
+                <td class="text-end">{% if p.planned is not None %}{{ p.planned|rub }}{% else %}—{% endif %}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </div>
+  </section>
+</div>
+
+{{ d.chart|json_script:'dashboard-data' }}
+{% endif %}
+{% endwith %}
+{% endblock %}
+
+{% block scripts %}
+{% if dashboard.has_subscriptions %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+  const data = JSON.parse(document.getElementById('dashboard-data').textContent);
+  const css = getComputedStyle(document.documentElement);
+  const ink = css.getPropertyValue('--st-ink').trim();
+  const muted = css.getPropertyValue('--st-muted').trim();
+  const line = css.getPropertyValue('--st-line').trim();
+  const accent = css.getPropertyValue('--st-accent').trim();
+  const surface = css.getPropertyValue('--st-surface').trim();
+  const rub = new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 0 });
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  Chart.defaults.font.family = css.getPropertyValue('--st-font').trim();
+  Chart.defaults.font.size = 13;
+  Chart.defaults.color = muted;
+  Chart.defaults.animation = reduceMotion ? false : { duration: 500 };
+  const tooltip = {
+    backgroundColor: ink, titleColor: surface, bodyColor: surface,
+    padding: 10, cornerRadius: 8, displayColors: true, boxPadding: 4,
+  };
+
+  // Доля категорий: разрыв 2px цветом поверхности между секторами, легенда — HTML рядом
+  new Chart(document.getElementById('chart-categories'), {
+    type: 'doughnut',
+    data: {
+      labels: data.categories.labels,
+      datasets: [{
+        data: data.categories.values,
+        backgroundColor: data.categories.colors,
+        borderColor: surface, borderWidth: 2, hoverOffset: 6,
+      }],
+    },
+    options: {
+      cutout: '64%', maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { ...tooltip, callbacks: {
+          label: (ctx) => ` ${rub.format(ctx.parsed)} — ${data.categories.shares[ctx.dataIndex]}%`,
+        } },
+      },
+    },
+  });
+
+  // Динамика: сплошная линия — оплачено, пунктир — план на текущий и следующий месяц
+  new Chart(document.getElementById('chart-months'), {
+    type: 'line',
+    data: {
+      labels: data.months.labels,
+      datasets: [
+        {
+          label: 'Оплачено', data: data.months.actual,
+          borderColor: accent, backgroundColor: accent, borderWidth: 2,
+          pointRadius: 3, pointHoverRadius: 6, pointBackgroundColor: accent,
+          // Без сглаживания: кривая «выдумывала» бы значения между месяцами
+          pointBorderColor: surface, pointBorderWidth: 2, tension: 0,
+        },
+        {
+          label: 'По плану', data: data.months.planned,
+          borderColor: muted, backgroundColor: muted, borderWidth: 2, borderDash: [6, 5],
+          pointRadius: 3, pointHoverRadius: 6, pointBackgroundColor: surface,
+          pointBorderColor: muted, pointBorderWidth: 2, tension: 0,
+        },
+      ],
+    },
+    options: {
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      scales: {
+        x: { grid: { display: false }, border: { color: line } },
+        y: {
+          beginAtZero: true, border: { display: false },
+          grid: { color: line, drawTicks: false },
+          ticks: { padding: 8, maxTicksLimit: 5, callback: (v) => rub.format(v) },
+        },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: { ...tooltip, callbacks: {
+          label: (ctx) => ctx.parsed.y === null ? null : ` ${ctx.dataset.label}: ${rub.format(ctx.parsed.y)}`,
+        } },
+      },
+    },
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}

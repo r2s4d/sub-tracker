@@ -1,0 +1,1 @@
+{% if items|length == 1 %}{% with item=items.0 %}Пробный период {{ item.name }} заканчивается {{ item.when }}{% endwith %}{% else %}Заканчиваются пробные периоды: {{ items|length }}{% endif %}
