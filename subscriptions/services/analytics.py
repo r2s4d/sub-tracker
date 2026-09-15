@@ -22,6 +22,10 @@ from .dates import add_months
 from .notifications import DashboardNotifier, Reminder, collect_reminders
 
 ZERO = Decimal('0.00')
+MONTHS_FULL = [
+    'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
+]
 MONTHS_SHORT = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
 
 
@@ -176,7 +180,8 @@ def build_dashboard(user, today: date) -> DashboardData:
     summary = spending_summary(user, today, pairs)
     by_category = spending_by_category(user, pairs)
     months = monthly_spending(user, today, pairs=pairs)
-    upcoming = DashboardNotifier(limit=6).deliver(user, collect_reminders(user, today, horizon_days=30))
+    # Все списания на 30 дней: блок прокручивается, а не обрезает список
+    upcoming = DashboardNotifier().deliver(user, collect_reminders(user, today, horizon_days=30))
 
     # Для Chart.js: деньги в float только на границе с JS.
     chart = {
@@ -188,6 +193,7 @@ def build_dashboard(user, today: date) -> DashboardData:
         },
         'months': {
             'labels': [p.label for p in months],
+            'titles': [f'{MONTHS_FULL[p.month.month - 1]} {p.month.year}' for p in months],
             'actual': [None if p.actual is None else float(p.actual) for p in months],
             'planned': [None if p.planned is None else float(p.planned) for p in months],
         },
