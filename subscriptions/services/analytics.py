@@ -15,7 +15,8 @@ from decimal import ROUND_HALF_UP, Decimal
 from django.db.models import Sum
 from django.db.models.functions import TruncMonth
 
-from subscriptions.models import Payment, Subscription
+from core.templatetags.money import rub
+from subscriptions.models import BillingType, Payment, Subscription
 
 from .billing import BillingCalculator, BillingCalculatorFactory
 from .dates import add_months
@@ -49,6 +50,16 @@ class SpendingSummary:
 
 
 @dataclass
+class CategoryItem:
+    """Подписка внутри категории — для раскрытия сектора диаграммы."""
+
+    pk: int
+    name: str
+    monthly: Decimal
+    note: str  # «в месяц», «1 200 ₽ в год», «пробный до 16.09»
+
+
+@dataclass
 class CategorySpending:
     name: str
     slug: str
@@ -56,6 +67,7 @@ class CategorySpending:
     monthly: Decimal
     share: Decimal  # проценты, 0–100, один знак после запятой
     count: int
+    items: list[CategoryItem] = field(default_factory=list)
 
 
 @dataclass
@@ -64,6 +76,7 @@ class MonthPoint:
     label: str
     actual: Decimal | None  # сколько реально оплачено (по Payment)
     planned: Decimal | None  # сколько спишется по плану (только текущий и следующий месяц)
+    breakdown: list[tuple[str, Decimal]] = field(default_factory=list)  # за что заплатили, по убыванию
 
 
 @dataclass
@@ -105,16 +118,32 @@ def spending_summary(user, today: date, pairs=None) -> SpendingSummary:
     )
 
 
-def spending_by_category(user, pairs=None) -> list[CategorySpending]:
+def _item_note(subscription: Subscription, calc: BillingCalculator, today: date | None) -> str:
+    """Подпись к подписке в раскрытой категории: как на самом деле списываются деньги."""
+    if subscription.billing_type == BillingType.TRIAL and today and calc.is_trial_active(today):
+        return f'пробный до {subscription.trial_end_date:%d.%m}'
+    period_months = getattr(getattr(calc, 'after_trial', calc), 'period_months', 1)
+    if period_months == 12:
+        return f'{rub(subscription.price)} в год'
+    return 'в месяц'
+
+
+def spending_by_category(user, pairs=None, today: date | None = None) -> list[CategorySpending]:
     pairs = _active_with_calculators(user) if pairs is None else pairs
     totals: dict[int, Decimal] = defaultdict(lambda: ZERO)
     counts: dict[int, int] = defaultdict(int)
+    items: dict[int, list[CategoryItem]] = defaultdict(list)
     categories = {}
     for subscription, calc in pairs:
         category = subscription.service.category
         categories[category.pk] = category
-        totals[category.pk] += calc.monthly_cost()
+        monthly = calc.monthly_cost()
+        totals[category.pk] += monthly
         counts[category.pk] += 1
+        items[category.pk].append(CategoryItem(
+            pk=subscription.pk, name=subscription.display_name, monthly=monthly,
+            note=_item_note(subscription, calc, today),
+        ))
 
     grand_total = sum(totals.values(), ZERO)
     result = [
@@ -125,6 +154,7 @@ def spending_by_category(user, pairs=None) -> list[CategorySpending]:
             monthly=amount,
             share=(amount * 100 / grand_total).quantize(Decimal('0.1'), rounding=ROUND_HALF_UP),
             count=counts[pk],
+            items=sorted(items[pk], key=lambda item: item.monthly, reverse=True),
         )
         for pk, amount in totals.items()
         if amount > 0
@@ -148,14 +178,22 @@ def monthly_spending(user, today: date, months: int = 12, pairs=None) -> list[Mo
     first = add_months(current, -(months - 1))
     next_month = add_months(current, 1)
 
-    paid = dict(
+    # Одна выборка: суммы по (месяц, подписка). Итог месяца — сумма разбивки.
+    rows = (
         Payment.objects.filter(subscription__user=user, paid_at__gte=first, paid_at__lt=next_month)
         .annotate(month=TruncMonth('paid_at'))
-        .values('month')
+        .values('month', 'subscription__service__name', 'subscription__title')
         .annotate(total=Sum('amount'))
-        .values_list('month', 'total')
     )
-    paid = {(m.date() if hasattr(m, 'date') else m): total for m, total in paid.items()}
+    paid: dict[date, Decimal] = defaultdict(lambda: ZERO)
+    breakdown: dict[date, list[tuple[str, Decimal]]] = defaultdict(list)
+    for row in rows:
+        month = row['month'].date() if hasattr(row['month'], 'date') else row['month']
+        name = row['subscription__service__name']
+        if row['subscription__title']:
+            name = f"{name} — {row['subscription__title']}"
+        paid[month] += row['total']
+        breakdown[month].append((name, row['total']))
 
     def planned_for(month_start: date) -> Decimal:
         month_end = add_months(month_start, 1).replace(day=1)
@@ -171,6 +209,7 @@ def monthly_spending(user, today: date, months: int = 12, pairs=None) -> list[Mo
             label=_month_label(month, index == 0),
             actual=None if is_future else paid.get(month, ZERO),
             planned=planned_for(month) if month >= current else None,
+            breakdown=sorted(breakdown.get(month, []), key=lambda pair: pair[1], reverse=True),
         ))
     return points
 
@@ -178,7 +217,7 @@ def monthly_spending(user, today: date, months: int = 12, pairs=None) -> list[Mo
 def build_dashboard(user, today: date) -> DashboardData:
     pairs = _active_with_calculators(user)
     summary = spending_summary(user, today, pairs)
-    by_category = spending_by_category(user, pairs)
+    by_category = spending_by_category(user, pairs, today)
     months = monthly_spending(user, today, pairs=pairs)
     # Все списания на 30 дней: блок прокручивается, а не обрезает список
     upcoming = DashboardNotifier().deliver(user, collect_reminders(user, today, horizon_days=30))
@@ -190,12 +229,15 @@ def build_dashboard(user, today: date) -> DashboardData:
             'values': [float(c.monthly) for c in by_category],
             'colors': [c.color for c in by_category],
             'shares': [float(c.share) for c in by_category],
+            'counts': [c.count for c in by_category],
+            'items': [[{'name': i.name, 'monthly': float(i.monthly), 'note': i.note} for i in c.items] for c in by_category],
         },
         'months': {
             'labels': [p.label for p in months],
             'titles': [f'{MONTHS_FULL[p.month.month - 1]} {p.month.year}' for p in months],
             'actual': [None if p.actual is None else float(p.actual) for p in months],
             'planned': [None if p.planned is None else float(p.planned) for p in months],
+            'breakdown': [[[name, float(amount)] for name, amount in p.breakdown] for p in months],
         },
     }
     return DashboardData(

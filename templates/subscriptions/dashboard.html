@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load money ru %}
+{% load money ru static %}
 {% block title %}Обзор{% endblock %}
 
 {% block content %}
@@ -63,18 +63,41 @@
     </div>
     <div class="panel-body dash-categories">
       <div class="dash-doughnut">
+        <div class="chart-tip" data-tip="categories" hidden></div>
         <canvas id="chart-categories" role="img"
                 aria-label="Расходы по категориям: {% for c in d.by_category %}{{ c.name }} {{ c.monthly|rub }} ({{ c.share }}%){% if not forloop.last %}, {% endif %}{% endfor %}"></canvas>
+        {# В центре кольца — выбранная категория; по умолчанию — число категорий #}
+        <div class="dash-doughnut-center" aria-hidden="true">
+          <span class="dash-center-value" data-center-value>{{ d.by_category|length }}</span>
+          <span class="dash-center-label" data-center-label>{{ d.by_category|length|plural_ru:'категория,категории,категорий' }}</span>
+        </div>
       </div>
-      {# Легенда — это и есть таблица значений: цвет никогда не единственный носитель смысла #}
-      <ul class="legend-ledger">
+      {# Легенда — это и есть таблица значений. Строка раскрывается и показывает подписки категории. #}
+      <ul class="legend-ledger" data-legend>
         {% for c in d.by_category %}
-        <li style="--cat-color: {{ c.color }}">
-          <a href="{% url 'subscriptions:list' %}?category={{ c.slug }}" class="legend-name">
-            <span class="cat-dot" aria-hidden="true"></span>{{ c.name }}
-          </a>
-          <span class="legend-share">{{ c.share }}%</span>
-          <span class="legend-amount">{{ c.monthly|rub_html }}</span>
+        <li class="legend-item" style="--cat-color: {{ c.color }}" data-index="{{ forloop.counter0 }}">
+          <button type="button" class="legend-toggle" aria-expanded="false" aria-controls="legend-items-{{ forloop.counter0 }}">
+            <span class="legend-label">
+              <span class="legend-name"><span class="cat-dot" aria-hidden="true"></span>{{ c.name }}</span>
+              <span class="legend-share">{{ c.share|floatformat:1 }}%, {{ c.count }} {{ c.count|plural_ru:'подписка,подписки,подписок' }}</span>
+            </span>
+            <span class="legend-amount">{{ c.monthly|rub_html }}</span>
+            <span class="legend-chevron" aria-hidden="true"></span>
+          </button>
+          <div class="legend-items" id="legend-items-{{ forloop.counter0 }}" hidden>
+            <ul>
+              {% for item in c.items %}
+              <li>
+                <span class="legend-label">
+                  <a href="{% url 'subscriptions:detail' item.pk %}">{{ item.name }}</a>
+                  <span class="legend-item-note">{{ item.note }}</span>
+                </span>
+                <span class="legend-item-amount">{{ item.monthly|rub_html }}</span>
+              </li>
+              {% endfor %}
+            </ul>
+            <a class="legend-items-all" href="{% url 'subscriptions:list' %}?category={{ c.slug }}">Открыть в списке подписок</a>
+          </div>
         </li>
         {% endfor %}
       </ul>
@@ -119,6 +142,7 @@
     </div>
     <div class="panel-body">
       <div class="dash-line">
+        <div class="chart-tip" data-tip="months" hidden></div>
         <canvas id="chart-months" role="img"
                 aria-label="Оплачено по месяцам за год. Подробные значения — в таблице под графиком."></canvas>
       </div>
@@ -150,101 +174,7 @@
 
 {% block scripts %}
 {% if dashboard.has_subscriptions %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-<script>
-(function () {
-  const data = JSON.parse(document.getElementById('dashboard-data').textContent);
-  const css = getComputedStyle(document.documentElement);
-  const ink = css.getPropertyValue('--st-ink').trim();
-  const muted = css.getPropertyValue('--st-muted').trim();
-  const line = css.getPropertyValue('--st-line').trim();
-  const accent = css.getPropertyValue('--st-accent').trim();
-  const surface = css.getPropertyValue('--st-surface').trim();
-  const rub = new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 0 });
-  const percent = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 1 });
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  Chart.defaults.font.family = css.getPropertyValue('--st-font').trim();
-  Chart.defaults.font.size = 13;
-  Chart.defaults.color = muted;
-  Chart.defaults.animation = reduceMotion ? false : { duration: 500 };
-  const tooltip = {
-    backgroundColor: ink, titleColor: surface, bodyColor: surface,
-    padding: 10, cornerRadius: 8, displayColors: true, boxPadding: 4,
-  };
-
-  // Доля категорий: разрыв 2px цветом поверхности между секторами, легенда — HTML рядом
-  new Chart(document.getElementById('chart-categories'), {
-    type: 'doughnut',
-    data: {
-      labels: data.categories.labels,
-      datasets: [{
-        data: data.categories.values,
-        backgroundColor: data.categories.colors,
-        borderColor: surface, borderWidth: 2, hoverOffset: 6,
-      }],
-    },
-    options: {
-      cutout: '64%', maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        // Подсказка у курсора: категория, сумма в месяц и доля
-        tooltip: { ...tooltip, callbacks: {
-          title: (items) => items[0].label,
-          label: (ctx) => ` ${rub.format(ctx.parsed)} в месяц — ${percent.format(data.categories.shares[ctx.dataIndex])}%`,
-        } },
-      },
-    },
-  });
-
-  // Динамика: сплошная линия — оплачено, пунктир — план на текущий и следующий месяц
-  new Chart(document.getElementById('chart-months'), {
-    type: 'line',
-    data: {
-      labels: data.months.labels,
-      datasets: [
-        {
-          label: 'Оплачено', data: data.months.actual,
-          borderColor: accent, backgroundColor: accent, borderWidth: 2,
-          pointRadius: 3, pointHoverRadius: 6, pointBackgroundColor: accent,
-          // Без сглаживания: кривая «выдумывала» бы значения между месяцами
-          pointBorderColor: surface, pointBorderWidth: 2, tension: 0,
-        },
-        {
-          label: 'По плану', data: data.months.planned,
-          borderColor: muted, backgroundColor: muted, borderWidth: 2, borderDash: [6, 5],
-          pointRadius: 3, pointHoverRadius: 6, pointBackgroundColor: surface,
-          pointBorderColor: muted, pointBorderWidth: 2, tension: 0,
-        },
-      ],
-    },
-    options: {
-      maintainAspectRatio: false,
-      // Подсказка появляется, когда курсор над любой точкой по вертикали месяца
-      interaction: { mode: 'index', intersect: false, axis: 'x' },
-      scales: {
-        x: { grid: { display: false }, border: { color: line } },
-        y: {
-          beginAtZero: true, border: { display: false },
-          grid: { color: line, drawTicks: false },
-          ticks: { padding: 8, maxTicksLimit: 5, callback: (v) => rub.format(v) },
-        },
-      },
-      plugins: {
-        legend: { display: false },
-        // Подсказка по месяцу под курсором (или по тапу): оплачено и план
-        tooltip: {
-          ...tooltip,
-          filter: (item) => item.parsed.y !== null,
-          callbacks: {
-            title: (items) => data.months.titles[items[0].dataIndex],
-            label: (ctx) => ` ${ctx.dataset.label}: ${rub.format(ctx.parsed.y)}`,
-          },
-        },
-      },
-    },
-  });
-})();
-</script>
+<script src="{% static 'vendor/chartjs/chart.umd.min.js' %}"></script>
+<script src="{% static 'js/dashboard.js' %}"></script>
 {% endif %}
 {% endblock %}
