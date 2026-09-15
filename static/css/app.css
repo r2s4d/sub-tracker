@@ -559,10 +559,7 @@ a { text-underline-offset: 3px; }
 
 /* Ближайшие списания: высота как у соседнего блока, дальше — прокрутка внутри */
 .dash-upcoming { display: flex; flex-direction: column; min-height: 0; }
-.dash-upcoming-list { overflow-y: auto; max-height: 23rem; flex: 1 1 auto; }
-@media (min-width: 992px) {
-  .dash-upcoming { max-height: 30rem; }
-}
+.dash-upcoming-list { overflow-y: auto; max-height: 14rem; flex: 1 1 auto; }
 .dash-upcoming-row { grid-template-columns: minmax(0, 1fr) auto; }
 @media (min-width: 576px) {
   .dash-upcoming-row { grid-template-columns: minmax(0, 1fr) 6.5rem 6.5rem; }
@@ -607,3 +604,76 @@ a { text-underline-offset: 3px; }
   font-size: .75rem; font-weight: 600; display: grid; place-items: center;
 }
 .how-it-works strong { color: var(--st-ink); font-weight: 600; }
+
+
+/* ---------- Изменения за месяц в главном блоке ---------- */
+.dash-hero-change { margin: .6rem 0 0; font-size: .9rem; color: var(--st-muted); max-width: 62ch; }
+.dash-change-amount { color: var(--st-ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.dash-hero-change a { color: var(--st-ink); }
+
+/* ---------- Календарь списаний ---------- */
+.cal-nav { display: flex; align-items: center; justify-content: space-between; gap: .25rem; margin-bottom: .6rem; }
+.cal-nav-title { min-width: 7.5rem; text-align: center; font-weight: 600; font-size: .9rem; }
+.cal-nav-btn {
+  width: 2rem; height: 2rem; display: grid; place-items: center;
+  border: 1px solid var(--st-line); border-radius: var(--st-radius-control);
+  background: var(--st-surface); color: var(--st-ink);
+}
+.cal-nav-btn:hover:not(:disabled) { background: var(--st-ground); }
+.cal-nav-btn:disabled { opacity: .35; }
+.cal-chevron { width: .45rem; height: .45rem; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateX(-1px) rotate(-45deg); }
+.cal-chevron-left { transform: translateX(1px) rotate(135deg); }
+
+.cal { padding: .75rem 1rem .5rem; }
+.cal-weekdays, .cal-week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.cal-weekdays span { text-align: center; font-size: .72rem; color: var(--st-muted); padding-bottom: .25rem; }
+.cal-weekdays span:nth-child(n+6) { color: var(--st-ink); }
+
+/* День — число и до трёх точек цветов категорий; сумма и названия — по нажатию */
+.cal-day {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+  gap: .15rem;
+  min-height: 2.6rem;
+  padding: .3rem 0 .25rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: none;
+  font: inherit;
+  font-size: .85rem;
+  color: var(--st-ink);
+}
+.cal-num { line-height: 1.2; font-variant-numeric: tabular-nums; }
+.cal-day.is-outside { color: var(--st-line-strong); }
+.cal-day.is-past:not(.is-outside) { color: var(--st-muted); }
+.cal-day.is-today { border-color: var(--st-accent); }
+.cal-day.is-today .cal-num { color: var(--st-accent); font-weight: 650; }
+.cal-day.has-charges { background: var(--st-ground); cursor: pointer; }
+.cal-day.has-charges .cal-num { font-weight: 600; }
+.cal-day.has-charges:hover { background: var(--st-accent-soft); }
+.cal-day[aria-pressed="true"] { background: var(--st-accent-soft); border-color: var(--st-accent); }
+.cal-day.is-past.has-charges .cal-dots i { opacity: .45; }
+.cal-dots { display: flex; gap: 2px; height: 6px; }
+.cal-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--cat-color); }
+
+.cal-list-title { margin: .5rem 1.5rem .25rem; font-size: .8rem; color: var(--st-muted); }
+.cal-detail { border-top: 1px solid var(--st-line); margin-top: .25rem; }
+.cal-detail-head { display: flex; justify-content: space-between; align-items: baseline; padding: .75rem 1.5rem .25rem; }
+.cal-back { margin: 0 1rem .75rem; }
+@media (prefers-reduced-motion: no-preference) {
+  .cal-detail:not([hidden]) { animation: legend-open .18s ease-out; }
+}
+
+/* ---------- Платежи выбранного месяца под графиком ---------- */
+.month-detail { margin-top: 1rem; border: 1px solid var(--st-line); border-radius: var(--st-radius-panel); overflow: hidden; }
+.month-detail-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .85rem 1.25rem; background: var(--st-ground); }
+.month-detail-title { margin: 0; font-size: 1rem; }
+.month-detail-sub { margin: .1rem 0 0; font-size: .85rem; color: var(--st-muted); }
+.month-detail-list { max-height: 20rem; overflow-y: auto; }
+.month-detail-row { grid-template-columns: minmax(0, 1fr) 4rem 7rem; }
+.month-detail-date { color: var(--st-muted); font-size: .88rem; font-variant-numeric: tabular-nums; text-align: right; }
+@media (prefers-reduced-motion: no-preference) {
+  .month-detail:not([hidden]) { animation: legend-open .2s ease-out; }
+}
+/* В списке дня нет колонки «когда» — две колонки: название и сумма */
+.cal-detail .dash-upcoming-row { grid-template-columns: minmax(0, 1fr) auto; }

@@ -66,7 +66,15 @@
 
   /* ---------- Позиционирование подсказки ---------- */
 
-  function placeTip(tip, chart, model) {
+  const EDGE = 8;
+
+  /*
+   * outside = true — карточка ставится снаружи графика (для кольца): с той стороны,
+   * где курсор, а если там нет места — с противоположной, в крайнем случае под кольцом.
+   * Иначе при наведении на левую половину карточка ложилась на кольцо и закрывала проценты.
+   * outside = false — рядом с курсором (для линейного графика).
+   */
+  function placeTip(tip, chart, model, { outside = false } = {}) {
     if (model.opacity === 0) {
       tip.hidden = true;
       return;
@@ -76,12 +84,30 @@
     const gap = 14;
     const width = tip.offsetWidth;
     const height = tip.offsetHeight;
-    let left = rect.left + model.caretX + gap;
+    const fitsLeft = (x) => x >= EDGE;
+    const fitsRight = (x) => x + width <= window.innerWidth - EDGE;
+    let left;
     let top = rect.top + model.caretY - height / 2;
-    // Не даём карточке уйти за край окна: справа места нет — показываем слева от курсора
-    if (left + width > window.innerWidth - 8) left = rect.left + model.caretX - width - gap;
-    left = Math.max(8, left);
-    top = Math.min(Math.max(8, top), window.innerHeight - height - 8);
+
+    if (outside) {
+      const leftSide = rect.left - width - gap;
+      const rightSide = rect.right + gap;
+      const preferLeft = model.caretX < chart.width / 2;
+      if (preferLeft && fitsLeft(leftSide)) left = leftSide;
+      else if (fitsRight(rightSide)) left = rightSide;
+      else if (fitsLeft(leftSide)) left = leftSide;
+      else {
+        // Узкий экран: ни слева, ни справа не помещается — под кольцом
+        left = rect.left + rect.width / 2 - width / 2;
+        top = rect.bottom + gap;
+      }
+    } else {
+      left = rect.left + model.caretX + gap;
+      if (!fitsRight(left)) left = rect.left + model.caretX - width - gap;
+    }
+
+    left = Math.min(Math.max(EDGE, left), window.innerWidth - width - EDGE);
+    top = Math.min(Math.max(EDGE, top), window.innerHeight - height - EDGE);
     tip.style.left = `${left}px`;
     tip.style.top = `${top}px`;
   }
@@ -167,7 +193,7 @@
             } else {
               setCenter(selected);
             }
-            placeTip(categoryTip, chart, tooltip);
+            placeTip(categoryTip, chart, tooltip, { outside: true });
           },
         },
       },
@@ -223,6 +249,7 @@
 
   const months = data.months;
   const monthsTip = document.querySelector('[data-tip="months"]');
+  let selectedMonth = null;
 
   function renderMonthTip(index) {
     monthsTip.replaceChildren();
@@ -251,6 +278,10 @@
     } else if (actual === 0) {
       monthsTip.append(el('div', 'tip-hint', 'Платежей в этом месяце не отмечено'));
     }
+    if (actual !== null) {
+      const hint = selectedMonth === index ? 'Нажмите, чтобы свернуть список' : 'Нажмите, чтобы увидеть все платежи';
+      monthsTip.append(el('div', 'tip-hint', hint));
+    }
   }
 
   // Вертикальная линия под курсором: видно, к какому месяцу относится подсказка
@@ -272,7 +303,8 @@
     },
   };
 
-  new Chart(document.getElementById('chart-months'), {
+  const monthsCanvas = document.getElementById('chart-months');
+  const monthsChart = new Chart(monthsCanvas, {
     type: 'line',
     data: {
       labels: months.labels,
@@ -335,6 +367,112 @@
       },
     },
   });
+
+  /* ---------- Раскрытие месяца: все платежи под графиком ---------- */
+
+  const monthDetail = document.querySelector('[data-month-detail]');
+  const detailUrl = (pk) => monthDetail.dataset.detailUrl.replace('/0/', `/${pk}/`);
+
+  function highlightMonth(index) {
+    // Выбранная точка крупнее — видно, чей список открыт
+    const radius = months.actual.map((_, i) => (i === index ? 7 : 3));
+    monthsChart.data.datasets[0].pointRadius = radius;
+    monthsChart.update('none');
+  }
+
+  function renderMonthDetail(index) {
+    const payments = months.payments[index] || [];
+    const total = payments.reduce((sum, p) => sum + p.amount, 0);
+    const head = el('div', 'month-detail-head');
+    const title = el('div');
+    title.append(
+      el('h3', 'month-detail-title', `Платежи за ${months.titles[index].toLowerCase()}`),
+      el('p', 'month-detail-sub', payments.length
+        ? `${payments.length} ${plural(payments.length, 'платёж', 'платежа', 'платежей')} на ${rubShort.format(total)}`
+        : 'В этом месяце платежей не отмечено'),
+    );
+    const close = el('button', 'btn btn-outline-secondary btn-sm', 'Свернуть');
+    close.type = 'button';
+    close.addEventListener('click', () => toggleMonth(index));
+    head.append(title, close);
+
+    const list = el('ul', 'ledger month-detail-list');
+    payments.forEach((payment) => {
+      const item = el('li', 'ledger-row month-detail-row');
+      item.style.setProperty('--cat-color', payment.color);
+      const main = el('div');
+      const link = el('a', 'ledger-title', payment.name);
+      link.href = detailUrl(payment.pk);
+      main.append(link, el('div', 'ledger-meta', payment.method || 'способ оплаты не указан'));
+      item.append(main, el('div', 'month-detail-date', payment.date), el('div', 'ledger-amount'));
+      item.lastChild.append(money(payment.amount));
+      list.append(item);
+    });
+    monthDetail.replaceChildren(head, list);
+  }
+
+  function toggleMonth(index) {
+    if (months.actual[index] === null) return;  // будущий месяц: платежей ещё нет
+    selectedMonth = selectedMonth === index ? null : index;
+    highlightMonth(selectedMonth);
+    if (selectedMonth === null) {
+      monthDetail.hidden = true;
+      return;
+    }
+    renderMonthDetail(selectedMonth);
+    monthDetail.hidden = false;
+    monthDetail.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'nearest' });
+  }
+
+  monthsCanvas.addEventListener('click', (event) => {
+    const [hit] = monthsChart.getElementsAtEventForMode(event, 'index', { intersect: false, axis: 'x' }, true);
+    if (hit) toggleMonth(hit.index);
+  });
+  monthsCanvas.style.cursor = 'pointer';
+
+  /* ---------- Календарь списаний ---------- */
+
+  const calendar = document.querySelector('[data-calendar]');
+  if (calendar) {
+    const monthsInCalendar = [...calendar.querySelectorAll('[data-cal-month]')];
+    const title = calendar.querySelector('[data-cal-title]');
+    const summary = calendar.querySelector('[data-cal-summary]');
+    const prev = calendar.querySelector('[data-cal-prev]');
+    const next = calendar.querySelector('[data-cal-next]');
+    const upcoming = document.querySelector('[data-upcoming]');
+    const dayDetails = [...document.querySelectorAll('[data-day-detail]')];
+    let current = 0;
+
+    function showDay(day) {
+      calendar.querySelectorAll('.cal-day[aria-pressed]').forEach((cell) => {
+        cell.setAttribute('aria-pressed', String(cell.dataset.day === day));
+      });
+      dayDetails.forEach((detail) => { detail.hidden = detail.dataset.dayDetail !== day; });
+      upcoming.hidden = Boolean(day);
+    }
+
+    function showMonth(index) {
+      current = index;
+      monthsInCalendar.forEach((month, i) => { month.hidden = i !== index; });
+      title.textContent = monthsInCalendar[index].dataset.title;
+      summary.textContent = monthsInCalendar[index].dataset.summary;
+      prev.disabled = index === 0;
+      next.disabled = index === monthsInCalendar.length - 1;
+      showDay(null);
+    }
+
+    prev.addEventListener('click', () => showMonth(current - 1));
+    next.addEventListener('click', () => showMonth(current + 1));
+    calendar.addEventListener('click', (event) => {
+      const cell = event.target.closest('.cal-day[aria-pressed]');
+      if (!cell) return;
+      showDay(cell.getAttribute('aria-pressed') === 'true' ? null : cell.dataset.day);
+    });
+    document.addEventListener('click', (event) => {
+      if (event.target.closest('[data-show-upcoming]')) showDay(null);
+    });
+    showMonth(0);
+  }
 
   hideTipsOnScroll(categoryTip, monthsTip);
 })();

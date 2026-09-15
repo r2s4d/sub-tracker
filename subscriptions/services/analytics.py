@@ -80,12 +80,69 @@ class MonthPoint:
 
 
 @dataclass
+class CalendarCharge:
+    pk: int
+    name: str
+    amount: Decimal
+    color: str
+    is_trial_end: bool
+
+
+@dataclass
+class CalendarDay:
+    day: date
+    in_month: bool
+    is_today: bool
+    is_past: bool
+    charges: list[CalendarCharge] = field(default_factory=list)
+
+    @property
+    def total(self) -> Decimal:
+        return sum((c.amount for c in self.charges), ZERO)
+
+
+@dataclass
+class CalendarMonth:
+    month: date
+    title: str
+    weeks: list[list[CalendarDay]]
+    total: Decimal
+    charge_count: int
+
+
+@dataclass
+class MonthChange:
+    """Что изменилось в расходах за последний месяц."""
+
+    added: list[CategoryItem]
+    removed: list[CategoryItem]
+
+    @property
+    def delta(self) -> Decimal:
+        return sum((i.monthly for i in self.added), ZERO) - sum((i.monthly for i in self.removed), ZERO)
+
+    @property
+    def delta_abs(self) -> Decimal:
+        return abs(self.delta)
+
+    @property
+    def delta_sign(self) -> str:
+        return '+' if self.delta > 0 else '−' if self.delta < 0 else ''
+
+    @property
+    def has_changes(self) -> bool:
+        return bool(self.added or self.removed)
+
+
+@dataclass
 class DashboardData:
     summary: SpendingSummary
     by_category: list[CategorySpending]
     months: list[MonthPoint]
     upcoming: list[Reminder]
     has_subscriptions: bool
+    calendar: list[CalendarMonth] = field(default_factory=list)
+    change: MonthChange | None = None
     chart: dict = field(default_factory=dict)
 
 
@@ -214,6 +271,103 @@ def monthly_spending(user, today: date, months: int = 12, pairs=None) -> list[Mo
     return points
 
 
+def charge_calendar(user, today: date, pairs=None, months: int = 2) -> list[CalendarMonth]:
+    """Календарь списаний на текущий и следующий месяц: даты берутся у калькуляторов.
+
+    Сетка — полные недели с понедельника; дни соседних месяцев помечены in_month=False.
+    """
+    pairs = _active_with_calculators(user) if pairs is None else pairs
+    result = []
+    for offset in range(months):
+        month = add_months(today.replace(day=1), offset)
+        month_end = date.fromordinal(add_months(month, 1).toordinal() - 1)
+
+        by_day: dict[date, list[CalendarCharge]] = defaultdict(list)
+        for subscription, calc in pairs:
+            category = subscription.service.category
+            for charge_day in calc.charge_dates(month, month_end):
+                by_day[charge_day].append(CalendarCharge(
+                    pk=subscription.pk,
+                    name=subscription.display_name,
+                    amount=subscription.price,
+                    color=category.color,
+                    is_trial_end=subscription.billing_type == BillingType.TRIAL and charge_day == subscription.trial_end_date,
+                ))
+
+        start = date.fromordinal(month.toordinal() - month.weekday())
+        weeks, cursor = [], start
+        while cursor <= month_end or cursor.weekday() != 0:
+            if cursor.weekday() == 0:
+                weeks.append([])
+            weeks[-1].append(CalendarDay(
+                day=cursor,
+                in_month=cursor.month == month.month,
+                is_today=cursor == today,
+                is_past=cursor < today,
+                charges=sorted(by_day.get(cursor, []), key=lambda c: c.amount, reverse=True),
+            ))
+            cursor = date.fromordinal(cursor.toordinal() + 1)
+
+        all_charges = [c for charges in by_day.values() for c in charges]
+        result.append(CalendarMonth(
+            month=month,
+            title=f'{MONTHS_FULL[month.month - 1]} {month.year}',
+            weeks=weeks,
+            total=sum((c.amount for c in all_charges), ZERO),
+            charge_count=len(all_charges),
+        ))
+    return result
+
+
+def month_payments(user, today: date, months: int = 12) -> list[list[dict]]:
+    """Все платежи по месяцам (для раскрытия месяца на графике), от старых к новым."""
+    current = today.replace(day=1)
+    first = add_months(current, -(months - 1))
+    buckets: dict[date, list[dict]] = defaultdict(list)
+    payments = (
+        Payment.objects.filter(subscription__user=user, paid_at__gte=first, paid_at__lt=add_months(current, 1))
+        .select_related('subscription__service__category', 'payment_method')
+        .order_by('-paid_at', 'subscription__service__name')
+    )
+    for payment in payments:
+        category = payment.subscription.service.category
+        buckets[payment.paid_at.replace(day=1)].append({
+            'date': payment.paid_at.strftime('%d.%m'),
+            'name': payment.subscription.display_name,
+            'amount': float(payment.amount),
+            'method': str(payment.payment_method) if payment.payment_method else '',
+            'color': category.color,
+            'pk': payment.subscription_id,
+        })
+    # Индексы совпадают с точками графика; следующий (плановый) месяц без платежей
+    return [buckets.get(add_months(first, i), []) for i in range(months)] + [[]]
+
+
+def month_change(user, today: date, pairs=None) -> MonthChange:
+    """Добавленные и отключённые за последний месяц подписки.
+
+    Добавленные — активные с датой начала за последний месяц. Отключённые — неактивные,
+    изменённые за последний месяц: отдельной даты отключения в модели нет,
+    поэтому это приближение по updated_at (записано в DECISIONS.md).
+    """
+    pairs = _active_with_calculators(user) if pairs is None else pairs
+    since = add_months(today, -1)
+    added = [
+        CategoryItem(pk=s.pk, name=s.display_name, monthly=calc.monthly_cost(), note='')
+        for s, calc in pairs
+        if since < s.start_date <= today
+    ]
+    removed_qs = (
+        Subscription.objects.filter(user=user, is_active=False, updated_at__date__gt=since)
+        .select_related('service')
+    )
+    removed = [
+        CategoryItem(pk=s.pk, name=s.display_name, monthly=BillingCalculatorFactory.create(s).monthly_cost(), note='')
+        for s in removed_qs
+    ]
+    return MonthChange(added=added, removed=removed)
+
+
 def build_dashboard(user, today: date) -> DashboardData:
     pairs = _active_with_calculators(user)
     summary = spending_summary(user, today, pairs)
@@ -221,6 +375,9 @@ def build_dashboard(user, today: date) -> DashboardData:
     months = monthly_spending(user, today, pairs=pairs)
     # Все списания на 30 дней: блок прокручивается, а не обрезает список
     upcoming = DashboardNotifier().deliver(user, collect_reminders(user, today, horizon_days=30))
+
+    calendar = charge_calendar(user, today, pairs)
+    change = month_change(user, today, pairs)
 
     # Для Chart.js: деньги в float только на границе с JS.
     chart = {
@@ -238,6 +395,7 @@ def build_dashboard(user, today: date) -> DashboardData:
             'actual': [None if p.actual is None else float(p.actual) for p in months],
             'planned': [None if p.planned is None else float(p.planned) for p in months],
             'breakdown': [[[name, float(amount)] for name, amount in p.breakdown] for p in months],
+            'payments': month_payments(user, today),
         },
     }
     return DashboardData(
@@ -246,5 +404,7 @@ def build_dashboard(user, today: date) -> DashboardData:
         months=months,
         upcoming=upcoming,
         has_subscriptions=Subscription.objects.filter(user=user).exists(),
+        calendar=calendar,
+        change=change,
         chart=chart,
     )

@@ -10,7 +10,16 @@ from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
 from subscriptions.models import BillingPeriod, BillingType, Payment, Service
-from subscriptions.services.analytics import build_dashboard, monthly_spending, spending_by_category, spending_summary
+from subscriptions.models import Subscription
+from subscriptions.services.analytics import (
+    build_dashboard,
+    charge_calendar,
+    month_change,
+    month_payments,
+    monthly_spending,
+    spending_by_category,
+    spending_summary,
+)
 from subscriptions.services.billing import BillingCalculatorFactory
 
 from .utils import login_redirect_url, make_category, make_subscription, make_trial, make_user
@@ -147,6 +156,78 @@ class MonthlySpendingTests(AnalyticsDataMixin, TestCase):
         self.assertEqual(by_month[date(2026, 9, 1)].actual, Decimal('300'))
 
 
+class ChargeCalendarTests(AnalyticsDataMixin, TestCase):
+    def test_current_month_charges(self):
+        """Сентябрь: кинотеатр 5-го (300) и конец триала 20-го (600) — даты от калькуляторов."""
+        september = charge_calendar(self.user, TODAY)[0]
+        self.assertEqual(september.title, 'Сентябрь 2026')
+        self.assertEqual((september.charge_count, september.total), (2, Decimal('900.00')))
+        days = {d.day: d for week in september.weeks for d in week}
+        self.assertEqual([c.name for c in days[date(2026, 9, 5)].charges], ['test-Кинотеатр'])
+        trial_day = days[date(2026, 9, 20)]
+        self.assertTrue(trial_day.charges[0].is_trial_end)
+        self.assertEqual(trial_day.total, Decimal('600.00'))
+        self.assertTrue(days[date(2026, 9, 14)].is_today)
+        self.assertTrue(days[date(2026, 9, 5)].is_past)
+
+    def test_grid_is_full_weeks_from_monday(self):
+        """Сетка — полные недели с понедельника: 1 сентября 2026 — вторник, значит первая клетка 31 августа."""
+        september = charge_calendar(self.user, TODAY)[0]
+        self.assertEqual(len(september.weeks), 5)
+        self.assertTrue(all(len(week) == 7 for week in september.weeks))
+        first = september.weeks[0][0]
+        self.assertEqual(first.day, date(2026, 8, 31))
+        self.assertFalse(first.in_month)
+        self.assertEqual(september.weeks[-1][-1].day, date(2026, 10, 4))
+
+    def test_next_month_includes_yearly_charge(self):
+        october = charge_calendar(self.user, TODAY)[1]
+        self.assertEqual(october.charge_count, 3)
+        self.assertEqual(october.total, Decimal('2100.00'))
+
+    def test_inactive_and_foreign_subscriptions_excluded(self):
+        names = {c.name for month in charge_calendar(self.user, TODAY) for week in month.weeks for d in week for c in d.charges}
+        self.assertEqual(names, {'test-Кинотеатр', 'test-IDE', 'test-Нейросеть'})
+
+
+class MonthPaymentsTests(AnalyticsDataMixin, TestCase):
+    def test_payments_grouped_by_chart_month(self):
+        """Индексы совпадают с точками графика: 12 месяцев и пустой следующий (плановый)."""
+        months = month_payments(self.user, TODAY)
+        self.assertEqual(len(months), 13)
+        self.assertEqual([(p['name'], p['amount'], p['date']) for p in months[0]], [('test-IDE', 1200.0, '01.10')])
+        self.assertEqual([p['amount'] for p in months[11]], [300.0])
+        self.assertEqual(months[11][0]['pk'], self.monthly.pk)
+        self.assertEqual(months[12], [])
+
+    def test_other_users_payments_excluded(self):
+        other_sub = self.other.subscriptions.get()
+        Payment.objects.create(subscription=other_sub, amount=Decimal('50000'), paid_at=date(2026, 9, 1))
+        self.assertNotIn(50000.0, [p['amount'] for month in month_payments(self.user, TODAY) for p in month])
+
+
+class MonthChangeTests(AnalyticsDataMixin, TestCase):
+    def test_added_and_removed(self):
+        """Добавлена: подписка с датой начала за последний месяц. Отключена: неактивная, изменённая за месяц."""
+        Subscription.objects.filter(pk=self.inactive.pk).update(updated_at=date(2026, 9, 1))
+        change = month_change(self.user, TODAY)
+        self.assertEqual([i.name for i in change.added], ['test-Нейросеть'])
+        self.assertEqual([i.monthly for i in change.removed], [Decimal('999.00')])
+        self.assertEqual(change.delta, Decimal('-399.00'))
+        self.assertEqual((change.delta_sign, change.delta_abs), ('−', Decimal('399.00')))
+
+    def test_old_deactivation_not_counted(self):
+        Subscription.objects.filter(pk=self.inactive.pk).update(updated_at=date(2026, 6, 1))
+        change = month_change(self.user, TODAY)
+        self.assertEqual(change.removed, [])
+        self.assertEqual(change.delta_sign, '+')
+
+    def test_no_changes(self):
+        Subscription.objects.filter(pk=self.inactive.pk).update(updated_at=date(2026, 6, 1))
+        change = month_change(self.user, date(2027, 3, 1))
+        self.assertFalse(change.has_changes)
+
+
 class DashboardViewTests(AnalyticsDataMixin, TestCase):
     url = reverse('subscriptions:dashboard')
 
@@ -207,3 +288,5 @@ class DashboardViewTests(AnalyticsDataMixin, TestCase):
         for host in ('cdn.jsdelivr.net', 'fonts.googleapis.com', 'unpkg.com'):
             self.assertNotIn(host, html)
         self.assertContains(response, 'aria-expanded="false"')  # раскрываемая легенда
+        self.assertContains(response, 'data-calendar')
+        self.assertContains(response, 'data-month-detail')
