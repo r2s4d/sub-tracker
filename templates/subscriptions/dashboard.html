@@ -26,6 +26,14 @@
       <span class="dash-hero-sep" aria-hidden="true"></span>
       {{ s.active_count }} {{ s.active_count|plural_ru:'активная подписка,активные подписки,активных подписок' }}
     </p>
+    {% if d.change.has_changes %}
+    {# Что поменялось за месяц: добавленные и отключённые подписки #}
+    <p class="dash-hero-change">
+      {% if d.change.delta %}<span class="dash-change-amount">{{ d.change.delta_sign }}{{ d.change.delta_abs|rub }} в месяц</span> за последний месяц.{% else %}За последний месяц сумма не изменилась.{% endif %}
+      {% if d.change.added %}{{ d.change.added|length|plural_ru:'Добавлена,Добавлены,Добавлены' }} {% for item in d.change.added %}<a href="{% url 'subscriptions:detail' item.pk %}">{{ item.name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}.{% endif %}
+      {% if d.change.removed %}{{ d.change.removed|length|plural_ru:'Отключена,Отключены,Отключены' }} {% for item in d.change.removed %}<a href="{% url 'subscriptions:detail' item.pk %}">{{ item.name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}.{% endif %}
+    </p>
+    {% endif %}
     {% if s.trial_count %}
     <p class="dash-hero-note">
       <span class="status status-trial">пробный период</span>
@@ -104,11 +112,73 @@
     </div>
   </section>
 
-  <section class="panel dash-upcoming" aria-labelledby="upcoming-title">
+  <section class="panel dash-upcoming" aria-labelledby="calendar-title" data-calendar>
     <div class="panel-head">
-      <h2 id="upcoming-title">Ближайшие списания</h2>
-      <span class="text-secondary small">{{ d.upcoming|length }} за 30 дней</span>
+      <div>
+        <h2 id="calendar-title">Календарь списаний</h2>
+        <span class="text-secondary small" data-cal-summary>{{ d.calendar.0.charge_count }} {{ d.calendar.0.charge_count|plural_ru:'списание,списания,списаний' }} на {{ d.calendar.0.total|rub }}</span>
+      </div>
     </div>
+
+    <div class="cal">
+      <div class="cal-nav">
+        <button type="button" class="cal-nav-btn" data-cal-prev aria-label="Предыдущий месяц" disabled><span class="cal-chevron cal-chevron-left" aria-hidden="true"></span></button>
+        <span class="cal-nav-title" data-cal-title aria-live="polite">{{ d.calendar.0.title }}</span>
+        <button type="button" class="cal-nav-btn" data-cal-next aria-label="Следующий месяц"><span class="cal-chevron" aria-hidden="true"></span></button>
+      </div>
+      <div class="cal-weekdays" aria-hidden="true">
+        <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Вс</span>
+      </div>
+      {% for month in d.calendar %}
+      <div class="cal-month" data-cal-month="{{ forloop.counter0 }}" data-title="{{ month.title }}"
+           data-summary="{{ month.charge_count }} {{ month.charge_count|plural_ru:'списание,списания,списаний' }} на {{ month.total|rub }}"
+           {% if not forloop.first %}hidden{% endif %} aria-label="{{ month.title }}">
+        {% for week in month.weeks %}
+        <div class="cal-week">
+          {% for day in week %}
+          {% if day.charges and day.in_month %}
+          <button type="button" class="cal-day has-charges{% if day.is_today %} is-today{% endif %}{% if day.is_past %} is-past{% endif %}"
+                  data-day="{{ day.day|date:'Y-m-d' }}" aria-pressed="false"
+                  aria-label="{{ day.day|date:'j E' }}: {{ day.charges|length }} {{ day.charges|length|plural_ru:'списание,списания,списаний' }} на {{ day.total|rub }}">
+            <span class="cal-num">{{ day.day.day }}</span>
+            <span class="cal-dots" aria-hidden="true">{% for charge in day.charges|slice:':3' %}<i style="--cat-color: {{ charge.color }}"></i>{% endfor %}</span>
+          </button>
+          {% else %}
+          <span class="cal-day{% if not day.in_month %} is-outside{% endif %}{% if day.is_today %} is-today{% endif %}{% if day.is_past %} is-past{% endif %}">
+            <span class="cal-num">{{ day.day.day }}</span>
+          </span>
+          {% endif %}
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+
+    {# Списания выбранного дня (скрыты, пока день не выбран) #}
+    {% for month in d.calendar %}{% for week in month.weeks %}{% for day in week %}{% if day.charges and day.in_month %}
+    <div class="cal-detail" data-day-detail="{{ day.day|date:'Y-m-d' }}" hidden>
+      <div class="cal-detail-head">
+        <span class="fw-semibold">{{ day.day|date:'j E' }}</span>
+        <span>{{ day.total|rub_html }}</span>
+      </div>
+      <ul class="ledger">
+        {% for charge in day.charges %}
+        <li class="ledger-row dash-upcoming-row" style="--cat-color: {{ charge.color }}">
+          <div>
+            <a class="ledger-title" href="{% url 'subscriptions:detail' charge.pk %}">{{ charge.name }}</a>
+            {% if charge.is_trial_end %}<div class="ledger-meta"><span class="status status-trial">конец пробного</span></div>{% endif %}
+          </div>
+          <div class="ledger-amount">{{ charge.amount|rub_html }}</div>
+        </li>
+        {% endfor %}
+      </ul>
+      <button type="button" class="btn btn-link btn-sm cal-back" data-show-upcoming>Показать ближайшие списания</button>
+    </div>
+    {% endif %}{% endfor %}{% endfor %}{% endfor %}
+
+    <div data-upcoming>
+    <p class="cal-list-title">Ближайшие 30 дней</p>
     {% if d.upcoming %}
     <ul class="ledger dash-upcoming-list" tabindex="0" aria-label="Список ближайших списаний">
       {% for r in d.upcoming %}
@@ -130,6 +200,7 @@
     {% else %}
     <div class="empty"><p class="mb-0">В ближайшие 30 дней списаний нет.</p></div>
     {% endif %}
+    </div>
   </section>
 
   <section class="panel dash-wide" aria-labelledby="months-title">
@@ -144,8 +215,10 @@
       <div class="dash-line">
         <div class="chart-tip" data-tip="months" hidden></div>
         <canvas id="chart-months" role="img"
-                aria-label="Оплачено по месяцам за год. Подробные значения — в таблице под графиком."></canvas>
+                aria-label="Оплачено по месяцам за год. Нажмите на месяц, чтобы увидеть его платежи; значения есть и в таблице под графиком."></canvas>
       </div>
+      {# Платежи выбранного месяца — заполняются скриптом по клику на график #}
+      <div class="month-detail" data-month-detail data-detail-url="{% url 'subscriptions:detail' 0 %}" hidden aria-live="polite"></div>
       <details class="dash-table">
         <summary>Показать таблицей</summary>
         <div class="table-responsive">
