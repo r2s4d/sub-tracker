@@ -1,9 +1,9 @@
 /*
- * Subscription Tracker — дизайн-токены и слой поверх Bootstrap 5.
+ * Subscription Tracker - дизайн-токены и слой поверх Bootstrap 5.
  *
  * Идея: интерфейс нейтральный и холодный, цвет в нём несут только
- * категории (они же — сектора круговой диаграммы). Главный типографический
- * акцент — суммы: рубли крупно, копейки мельче, цифры табличные.
+ * категории (они же - сектора круговой диаграммы). Главный типографический
+ * акцент - суммы: рубли крупно, копейки мельче, цифры табличные.
  */
 
 :root {
@@ -85,7 +85,7 @@ a { text-underline-offset: 3px; }
   padding: 0 .5rem;
 }
 
-/* Знак бренда — стопка «списаний» в цветах категорий */
+/* Знак бренда - стопка «списаний» в цветах категорий */
 .brand-mark {
   display: grid;
   grid-template-columns: repeat(3, 6px);
@@ -192,7 +192,7 @@ a { text-underline-offset: 3px; }
 }
 .ledger-row:last-child { border-bottom: 0; }
 
-/* Цветная полоса категории — совпадает с сектором на круговой диаграмме */
+/* Цветная полоса категории - совпадает с сектором на круговой диаграмме */
 .ledger-row::before {
   content: '';
   position: absolute;
@@ -260,7 +260,7 @@ a { text-underline-offset: 3px; }
   border-color: var(--st-line-strong);
   padding: .55rem .75rem;
 }
-/* Справа у select место под стрелку — иначе длинный текст налезает на неё */
+/* Справа у select место под стрелку - иначе длинный текст налезает на неё */
 .form-select { padding-right: 2.25rem; background-position: right .7rem center; }
 .form-control:focus, .form-select:focus { border-color: var(--st-accent); }
 
@@ -369,7 +369,7 @@ a { text-underline-offset: 3px; }
 .subscription-main .status { vertical-align: .1em; margin-right: .25rem; }
 .subscription-tags-row { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .35rem; }
 
-/* На узком экране категория уходит под название, сумма — справа на две строки */
+/* На узком экране категория уходит под название, сумма - справа на две строки */
 @media (max-width: 767.98px) {
   .subscription-row .subscription-cat { grid-column: 1; grid-row: 2; }
   .subscription-row .ledger-amount { grid-column: 2; grid-row: 1 / span 2; }
@@ -395,7 +395,7 @@ a { text-underline-offset: 3px; }
   align-items: end;
 }
 @media (min-width: 576px) {
-  /* Две строки: сумма + дата, затем карта + кнопка — поля не обрезаются */
+  /* Две строки: сумма + дата, затем карта + кнопка - поля не обрезаются */
   .subscription-pay { grid-template-columns: 1fr 1fr; }
 }
 .subscription-pay .form-label { margin-bottom: .2rem; }
@@ -418,7 +418,7 @@ a { text-underline-offset: 3px; }
 
 /* ---------- Дашборд ---------- */
 
-/* Герой: месячная сумма — самый крупный текст в интерфейсе, без карточки вокруг */
+/* Герой: месячная сумма - самый крупный текст в интерфейсе, без карточки вокруг */
 .dash-hero {
   display: grid;
   gap: 1.5rem 3rem;
@@ -472,7 +472,7 @@ a { text-underline-offset: 3px; }
 .legend-item { border-bottom: 1px solid var(--st-line); }
 .legend-item:last-child { border-bottom: 0; }
 
-/* Строка легенды — кнопка: раскрывает подписки категории */
+/* Строка легенды - кнопка: раскрывает подписки категории */
 .legend-toggle {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto 1rem;
@@ -523,7 +523,7 @@ a { text-underline-offset: 3px; }
   @keyframes legend-open { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 }
 
-/* Подсказки графиков — «строка выписки»: белая карточка с полосой категории, суммы той же типографикой */
+/* Подсказки графиков - «строка выписки»: белая карточка с полосой категории, суммы той же типографикой */
 .chart-tip {
   position: fixed;
   z-index: 1080;
@@ -557,7 +557,7 @@ a { text-underline-offset: 3px; }
 .tip-more, .tip-hint { color: var(--st-muted); font-size: .78rem; }
 .tip-hint { margin-top: .45rem; }
 
-/* Ближайшие списания: высота как у соседнего блока, дальше — прокрутка внутри */
+/* Ближайшие списания: высота как у соседнего блока, дальше - прокрутка внутри */
 .dash-upcoming { display: flex; flex-direction: column; min-height: 0; }
 .dash-upcoming-list { overflow-y: auto; max-height: 14rem; flex: 1 1 auto; }
 .dash-upcoming-row { grid-template-columns: minmax(0, 1fr) auto; }
@@ -607,9 +607,15 @@ a { text-underline-offset: 3px; }
 
 
 /* ---------- Изменения за месяц в главном блоке ---------- */
-.dash-hero-change { margin: .6rem 0 0; font-size: .9rem; color: var(--st-muted); max-width: 62ch; }
+/* Каждое изменение отдельной строкой: итог, затем добавленные и отключённые подписки */
+.dash-hero-change { list-style: none; margin: .75rem 0 0; padding: 0; font-size: .88rem; color: var(--st-muted); display: grid; gap: .2rem; max-width: 30rem; }
+.dash-hero-change li { display: flex; align-items: baseline; gap: .4rem; }
+.dash-change-total { margin-bottom: .1rem; }
 .dash-change-amount { color: var(--st-ink); font-weight: 600; font-variant-numeric: tabular-nums; }
 .dash-hero-change a { color: var(--st-ink); }
+.dash-change-mark { width: .9rem; text-align: center; font-weight: 600; color: var(--st-muted); }
+.dash-change-mark.is-added { color: var(--st-ink); }
+.dash-change-sum { margin-left: auto; padding-left: 1rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 /* ---------- Календарь списаний ---------- */
 .cal-nav { display: flex; align-items: center; justify-content: space-between; gap: .25rem; margin-bottom: .6rem; }
@@ -629,7 +635,7 @@ a { text-underline-offset: 3px; }
 .cal-weekdays span { text-align: center; font-size: .72rem; color: var(--st-muted); padding-bottom: .25rem; }
 .cal-weekdays span:nth-child(n+6) { color: var(--st-ink); }
 
-/* День — число и до трёх точек цветов категорий; сумма и названия — по нажатию */
+/* День - число и до трёх точек цветов категорий; сумма и названия - по нажатию */
 .cal-day {
   position: relative;
   display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
@@ -675,5 +681,5 @@ a { text-underline-offset: 3px; }
 @media (prefers-reduced-motion: no-preference) {
   .month-detail:not([hidden]) { animation: legend-open .2s ease-out; }
 }
-/* В списке дня нет колонки «когда» — две колонки: название и сумма */
+/* В списке дня нет колонки «когда» - две колонки: название и сумма */
 .cal-detail .dash-upcoming-row { grid-template-columns: minmax(0, 1fr) auto; }
