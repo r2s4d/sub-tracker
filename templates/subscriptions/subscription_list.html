@@ -1,17 +1,16 @@
 {% extends 'base.html' %}
-{% load money %}
 {% block title %}Мои подписки{% endblock %}
 
 {% block content %}
 <div class="page-head">
   <div>
     <h1>Мои подписки</h1>
-    <p>{% if is_filtered %}Найдено: {% endif %}{{ count_label }}</p>
+    <p>Все регулярные списания. Фильтры применяются сразу.</p>
   </div>
   <a href="{% url 'subscriptions:create' %}" class="btn btn-primary">Добавить подписку</a>
 </div>
 
-<form method="get" class="subscription-filters" aria-label="Фильтры">
+<form method="get" class="subscription-filters" aria-label="Фильтры" data-live-filters>
   <div>
     <label class="visually-hidden" for="filter-category">Категория</label>
     <select name="category" id="filter-category" class="form-select form-select-sm">
@@ -49,70 +48,56 @@
     </select>
   </div>
   {% endif %}
-  <div class="d-flex gap-2 align-items-center">
-    <button type="submit" class="btn btn-outline-secondary btn-sm">Показать</button>
-    {% if is_filtered %}<a href="{% url 'subscriptions:list' %}" class="small">Сбросить фильтры</a>{% endif %}
-  </div>
+  {# Без JavaScript фильтры отправляются кнопкой; со скриптом кнопка скрыта #}
+  <noscript><button type="submit" class="btn btn-outline-secondary btn-sm">Показать</button></noscript>
 </form>
 
-<div class="panel">
-  {% if subscriptions %}
-  <ul class="ledger">
-    {% for subscription in subscriptions %}
-    {% with category=subscription.service.category %}
-    <li class="ledger-row subscription-row{% if not subscription.is_active %} is-inactive{% endif %}" style="--cat-color: {{ category.color }}">
-      <div class="subscription-main">
-        <a class="ledger-title" href="{% url 'subscriptions:detail' subscription.pk %}">{{ subscription.display_name }}</a>
-        {% if subscription.billing_type == 'trial' %}<span class="status status-trial">пробный до {{ subscription.trial_end_date|date:'d.m.Y' }}</span>{% endif %}
-        {% if not subscription.is_active %}<span class="status status-off">отключена</span>{% endif %}
-        {% with tags=subscription.tags.all %}
-        {% if tags %}
-        <div class="subscription-tags-row">
-          {% for tag in tags %}<span class="tag-pill">{{ tag.name }}</span>{% endfor %}
-        </div>
-        {% endif %}
-        {% endwith %}
-      </div>
-      <div class="ledger-meta subscription-cat">
-        <span class="cat-dot" aria-hidden="true"></span>{{ category.name }}
-      </div>
-      <div class="ledger-amount">
-        {{ subscription.price|rub_html }}
-        <small>
-          {% if subscription.billing_type == 'monthly' %}в месяц
-          {% elif subscription.billing_type == 'yearly' %}в год
-          {% elif subscription.billing_period_after_trial == 'yearly' %}в год после пробного
-          {% else %}в месяц после пробного{% endif %}
-        </small>
-      </div>
-    </li>
-    {% endwith %}
-    {% endfor %}
-  </ul>
-
-  {% elif not has_any %}
-  <div class="empty">
-    <h2>Подписок пока нет</h2>
-    <p>Добавьте первую подписку: сервис, цену и как часто за него платите. Дальше здесь появится список всех регулярных списаний.</p>
-    <a href="{% url 'subscriptions:create' %}" class="btn btn-primary">Добавить первую подписку</a>
-  </div>
-
-  {% elif is_filtered %}
-  <div class="empty">
-    <h2>Ничего не найдено</h2>
-    <p>Под выбранные фильтры не подходит ни одна подписка.</p>
-    <a href="{% url 'subscriptions:list' %}" class="btn btn-outline-secondary">Сбросить фильтры</a>
-  </div>
-
-  {% else %}
-  <div class="empty">
-    <h2>Активных подписок нет</h2>
-    <p>Все ваши подписки отключены.</p>
-    <div class="d-flex flex-wrap gap-2">
-      <a href="{% url 'subscriptions:list' %}?status=all" class="btn btn-outline-secondary">Показать все</a>
-      <a href="{% url 'subscriptions:create' %}" class="btn btn-primary">Добавить подписку</a>
-    </div>
-  </div>
-  {% endif %}
+<div id="subscription-results" aria-busy="false">
+  {% include 'subscriptions/subscription_list_results.html' %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  const form = document.querySelector('[data-live-filters]');
+  const results = document.getElementById('subscription-results');
+  let controller = null;
+
+  // Смена фильтра: запрос только за списком, без перезагрузки страницы.
+  // URL в адресной строке обновляется — ссылкой с фильтрами можно поделиться, «назад» работает.
+  async function apply(push = true) {
+    const params = new URLSearchParams(new FormData(form));
+    for (const [key, value] of [...params]) if (!value) params.delete(key);
+    const url = `${form.action || location.pathname}${params.toString() ? '?' + params : ''}`;
+
+    if (controller) controller.abort();  // быстрые переключения: актуален только последний запрос
+    controller = new AbortController();
+    results.setAttribute('aria-busy', 'true');
+    try {
+      const response = await fetch(url, { headers: { 'X-Partial': 'results' }, signal: controller.signal });
+      if (!response.ok) throw new Error(response.status);
+      results.innerHTML = await response.text();
+      if (push) history.replaceState(null, '', url);
+    } catch (error) {
+      if (error.name !== 'AbortError') location.href = url;  // запасной путь — обычная загрузка
+    } finally {
+      results.setAttribute('aria-busy', 'false');
+    }
+  }
+
+  form.addEventListener('change', () => apply());
+  form.addEventListener('submit', (event) => { event.preventDefault(); apply(); });
+
+  results.addEventListener('click', (event) => {
+    if (!event.target.closest('[data-reset-filters]')) return;
+    event.preventDefault();
+    form.reset();
+    form.querySelectorAll('select').forEach((select) => {
+      select.value = select.name === 'status' ? 'active' : '';
+    });
+    apply();
+  });
+})();
+</script>
 {% endblock %}
