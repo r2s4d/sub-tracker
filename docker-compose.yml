@@ -1,5 +1,7 @@
-# Этап 1: только база данных для локальной разработки.
-# Сервис web (Django + gunicorn) добавляется на этапе 4.
+# Три сервиса: db (PostgreSQL), web (Django + gunicorn), nginx (вход снаружи и статика).
+#
+# Локальная разработка: `docker compose up -d db`, Django через runserver.
+# Весь стек, как на сервере: `docker compose up -d --build`, сайт на http://localhost/.
 name: subtracker
 
 services:
@@ -10,10 +12,46 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    # Порт открыт только на loopback: runserver на этой машине до базы достаёт,
+    # а снаружи сервера база не видна (docker обходит правила ufw для 0.0.0.0).
+    # ::1 нужен, потому что Windows резолвит localhost сначала в IPv6.
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+      - "[::1]:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # Внутри сети docker база доступна по имени сервиса и стандартному порту,
+      # независимо от POSTGRES_HOST/POSTGRES_PORT в .env (они для runserver).
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+    volumes:
+      - static_files:/app/staticfiles
+    depends_on:
+      db:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    volumes:
+      - ./docker/nginx:/etc/nginx/conf.d:ro
+      - static_files:/app/staticfiles:ro
+    depends_on:
+      - web
 
 volumes:
   postgres_data:
+  static_files:

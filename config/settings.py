@@ -8,6 +8,7 @@ Django settings for the Subscription Tracker project.
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,11 +24,20 @@ def env_list(name, default=''):
     return [item.strip() for item in os.environ.get(name, default).split(',') if item.strip()]
 
 
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'dev-insecure-key-change-me')
-
 DEBUG = env_bool('DJANGO_DEBUG', False)
 
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', '')
+if not SECRET_KEY:
+    if not DEBUG:
+        # На сервере без ключа не стартуем: ключ по умолчанию лежит в открытом репозитории,
+        # и с ним можно подделать cookie сессии.
+        raise ImproperlyConfigured('Задайте DJANGO_SECRET_KEY в .env')
+    SECRET_KEY = 'dev-insecure-key-change-me'
+
 ALLOWED_HOSTS = env_list('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1')
+
+# Адрес сайта для ссылок в письмах (команда из cron не знает домен запроса)
+SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')
 
 
 INSTALLED_APPS = [
@@ -128,5 +138,30 @@ DEFAULT_FROM_EMAIL = (
     or 'Subscription Tracker <noreply@localhost>'
 )
 
-# Адрес сайта для ссылок в письмах (команда из cron не знает домен запроса)
-SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')
+
+# Работа за nginx. Django видит запрос от nginx по http, поэтому о настоящем протоколе
+# узнаёт из заголовка X-Forwarded-Proto (nginx его всегда перезаписывает, клиент подменить не может).
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Форма входа отправляется POST-запросом, и Django сверяет Origin с этим списком (защита от CSRF).
+CSRF_TRUSTED_ORIGINS = env_list('DJANGO_CSRF_TRUSTED_ORIGINS', SITE_URL)
+
+# Когда сайт работает по HTTPS, cookie сессии и CSRF не уходят по незашифрованному http.
+HTTPS_ENABLED = SITE_URL.startswith('https://')
+SESSION_COOKIE_SECURE = HTTPS_ENABLED
+CSRF_COOKIE_SECURE = HTTPS_ENABLED
+if HTTPS_ENABLED:
+    SECURE_SSL_REDIRECT = True
+    # Сначала на час: если с сертификатом что-то не так, браузеры быстро забудут правило.
+    SECURE_HSTS_SECONDS = int(os.environ.get('DJANGO_HSTS_SECONDS', '3600'))
+
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = 'same-origin'
+
+# Логи в stdout: на сервере их показывает `docker compose logs web`.
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {'console': {'class': 'logging.StreamHandler'}},
+    'root': {'handlers': ['console'], 'level': 'WARNING'},
+}
