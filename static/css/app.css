@@ -452,27 +452,110 @@ a { text-underline-offset: 3px; }
 }
 
 /* Кольцевая диаграмма + легенда-выписка */
-.dash-categories { display: grid; gap: 1.25rem; align-items: center; }
+.dash-categories { display: grid; gap: 1.25rem; align-items: start; }
 @media (min-width: 576px) {
-  .dash-categories { grid-template-columns: 11rem minmax(0, 1fr); }
+  .dash-categories { grid-template-columns: 12rem minmax(0, 1fr); }
 }
-.dash-doughnut { position: relative; height: 11rem; width: 11rem; margin: 0 auto; }
+.dash-doughnut { position: relative; height: 12rem; width: 12rem; margin: 0 auto; }
+@media (min-width: 576px) { .dash-doughnut { position: sticky; top: 1rem; } }
+
+/* Центр кольца: выбранная категория (доля крупно) или число категорий */
+.dash-doughnut-center {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  pointer-events: none; text-align: center; padding: 0 2.6rem;
+}
+.dash-center-value { font-size: 1.5rem; font-weight: 650; letter-spacing: -0.02em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.dash-center-label { font-size: .75rem; color: var(--st-muted); line-height: 1.25; margin-top: .15rem; }
 
 .legend-ledger { list-style: none; margin: 0; padding: 0; }
-.legend-ledger li {
+.legend-item { border-bottom: 1px solid var(--st-line); }
+.legend-item:last-child { border-bottom: 0; }
+
+/* Строка легенды — кнопка: раскрывает подписки категории */
+.legend-toggle {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 3rem 6rem;
+  grid-template-columns: minmax(0, 1fr) auto 1rem;
   gap: .75rem;
-  align-items: baseline;
-  padding: .45rem 0;
-  border-bottom: 1px solid var(--st-line);
+  align-items: center;
+  width: 100%;
+  padding: .5rem .25rem;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
   font-size: .92rem;
+  text-align: left;
 }
-.legend-ledger li:last-child { border-bottom: 0; }
-.legend-name { color: var(--st-ink); text-decoration: none; }
-.legend-name:hover { color: var(--st-accent); }
-.legend-share { color: var(--st-muted); text-align: right; font-variant-numeric: tabular-nums; }
+.legend-toggle:hover { background: var(--st-ground); }
+.legend-name { color: var(--st-ink); }
+.legend-label { display: flex; flex-direction: column; min-width: 0; }
+.legend-share { color: var(--st-muted); font-size: .78rem; padding-left: .95rem; font-variant-numeric: tabular-nums; }
 .legend-amount { text-align: right; }
+.legend-chevron {
+  width: .45rem; height: .45rem; justify-self: center; align-self: center;
+  border-right: 1.5px solid var(--st-muted); border-bottom: 1.5px solid var(--st-muted);
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform .18s ease;
+}
+.legend-item.is-open .legend-chevron { transform: translateY(1px) rotate(-135deg); }
+.legend-item.is-open .legend-name { font-weight: 600; }
+
+/* Раскрытая категория: подписки с тонкой линией цвета категории слева */
+.legend-items { margin: 0 2rem .6rem .6rem; padding: .15rem 0 .1rem .9rem; border-left: 2px solid var(--cat-color); }
+.legend-items ul { list-style: none; margin: 0; padding: 0; }
+.legend-items li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: .75rem;
+  align-items: center;
+  padding: .3rem .25rem .3rem 0;
+  font-size: .88rem;
+}
+.legend-items li a { color: var(--st-ink); text-decoration: none; }
+.legend-items li a:hover { color: var(--st-accent); text-decoration: underline; }
+.legend-item-note { color: var(--st-muted); font-size: .78rem; }
+.legend-item-amount { text-align: right; }
+.legend-items-all { display: inline-block; margin-top: .25rem; font-size: .82rem; }
+@media (prefers-reduced-motion: no-preference) {
+  .legend-items:not([hidden]) { animation: legend-open .2s ease-out; }
+  @keyframes legend-open { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+}
+
+/* Подсказки графиков — «строка выписки»: белая карточка с полосой категории, суммы той же типографикой */
+.chart-tip {
+  position: fixed;
+  z-index: 1080;
+  width: max-content;
+  min-width: 13rem;
+  max-width: 17rem;
+  padding: .7rem .85rem .7rem 1.05rem;
+  background: var(--st-surface);
+  border: 1px solid var(--st-line);
+  border-radius: 10px;
+  box-shadow: 0 10px 28px rgba(28, 36, 51, .14), 0 1px 3px rgba(28, 36, 51, .08);
+  pointer-events: none;
+  font-size: .85rem;
+  line-height: 1.35;
+}
+.chart-tip::before {
+  content: '';
+  position: absolute; left: .45rem; top: .75rem; bottom: .75rem;
+  width: 3px; border-radius: 2px;
+  background: var(--cat-color, var(--st-accent));
+}
+.tip-title { font-weight: 600; color: var(--st-ink); }
+.tip-amount { display: block; margin-top: .15rem; font-size: 1.35rem; font-weight: 650; letter-spacing: -0.015em; }
+.tip-sub { color: var(--st-muted); font-size: .8rem; }
+.tip-list { margin-top: .55rem; padding-top: .45rem; border-top: 1px solid var(--st-line); display: grid; gap: .2rem; }
+.tip-row { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; }
+.tip-row-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--st-ink); }
+.tip-row .money { font-weight: 500; }
+.tip-row-plan { margin-top: .4rem; }
+.tip-row-plan .tip-row-label { color: var(--st-muted); }
+.tip-more, .tip-hint { color: var(--st-muted); font-size: .78rem; }
+.tip-hint { margin-top: .45rem; }
 
 /* Ближайшие списания: высота как у соседнего блока, дальше — прокрутка внутри */
 .dash-upcoming { display: flex; flex-direction: column; min-height: 0; }

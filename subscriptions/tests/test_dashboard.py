@@ -94,6 +94,15 @@ class SpendingByCategoryTests(AnalyticsDataMixin, TestCase):
         self.assertEqual(sum(c.share for c in result), Decimal('100.0'))
         self.assertEqual(result[0].count, 2)
 
+    def test_items_for_drill_down(self):
+        """Раскрытие категории: подписки внутри, по убыванию стоимости, с понятной подписью."""
+        work = spending_by_category(self.user, today=TODAY)[0]
+        self.assertEqual([i.name for i in work.items], ['test-Нейросеть', 'test-IDE'])
+        self.assertEqual([i.monthly for i in work.items], [Decimal('600.00'), Decimal('100.00')])
+        self.assertEqual(work.items[0].note, 'пробный до 20.09')
+        self.assertEqual(work.items[1].note, '1 200,00 ₽ в год')
+        self.assertNotIn(self.inactive.pk, [i.pk for c in spending_by_category(self.user) for i in c.items])
+
     def test_empty_user(self):
         self.assertEqual(spending_by_category(make_user('empty')), [])
 
@@ -116,6 +125,14 @@ class MonthlySpendingTests(AnalyticsDataMixin, TestCase):
         self.assertEqual(by_month[date(2026, 9, 1)].planned, Decimal('900.00'))
         self.assertEqual(by_month[date(2026, 10, 1)].planned, Decimal('2100.00'))
         self.assertIsNone(by_month[date(2026, 8, 1)].planned)
+
+    def test_breakdown_by_subscription(self):
+        """Подсказка месяца: за что именно заплатили, по убыванию суммы."""
+        Payment.objects.create(subscription=self.yearly, amount=Decimal('50'), paid_at=date(2026, 9, 10))
+        by_month = {p.month: p for p in monthly_spending(self.user, TODAY)}
+        self.assertEqual(by_month[date(2026, 9, 1)].breakdown, [('test-Кинотеатр', Decimal('300')), ('test-IDE', Decimal('50'))])
+        self.assertEqual(by_month[date(2026, 9, 1)].actual, Decimal('350'))
+        self.assertEqual(by_month[date(2026, 6, 1)].breakdown, [])
 
     def test_labels(self):
         labels = [p.label for p in monthly_spending(self.user, TODAY)]
@@ -175,4 +192,18 @@ class DashboardViewTests(AnalyticsDataMixin, TestCase):
         self.assertEqual(data.chart['categories']['values'], [700.0, 300.0])
         self.assertEqual(len(data.chart['months']['labels']), 13)
         self.assertEqual(data.chart['months']['titles'][0], 'Октябрь 2025')
+        self.assertEqual(data.chart['categories']['counts'], [2, 1])
+        self.assertEqual(data.chart['categories']['items'][0][0], {'name': 'test-Нейросеть', 'monthly': 600.0, 'note': 'пробный до 20.09'})
+        self.assertEqual(data.chart['months']['breakdown'][0], [['test-IDE', 1200.0]])
         self.assertIsNone(data.chart['months']['actual'][-1])
+
+    def test_dashboard_uses_local_static_not_cdn(self):
+        """Библиотеки грузятся с нашего сервера: внешний CDN мог не ответить, и диаграммы пропадали."""
+        self.client.force_login(self.user)
+        response = self.client.get(reverse('subscriptions:dashboard'))
+        html = response.content.decode()
+        self.assertIn('vendor/chartjs/chart.umd.min.js', html)
+        self.assertIn('js/dashboard.js', html)
+        for host in ('cdn.jsdelivr.net', 'fonts.googleapis.com', 'unpkg.com'):
+            self.assertNotIn(host, html)
+        self.assertContains(response, 'aria-expanded="false"')  # раскрываемая легенда
