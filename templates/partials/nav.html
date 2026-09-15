@@ -10,7 +10,7 @@
     <li><a href="{% url 'subscriptions:list' %}" {% if ns == 'subscriptions' and url in 'list,detail,create,update,delete' %}aria-current="page"{% endif %}>Мои подписки</a></li>
   </ul>
 
-  <p class="nav-group-title">Справочники</p>
+  <p class="nav-group-title">Для подписок</p>
   <ul class="nav-app mt-0">
     <li><a href="{% url 'subscriptions:service-list' %}" {% if url|slice:':7' == 'service' %}aria-current="page"{% endif %}>Сервисы</a></li>
     <li><a href="{% url 'subscriptions:paymentmethod-list' %}" {% if url|slice:':13' == 'paymentmethod' %}aria-current="page"{% endif %}>Способы оплаты</a></li>

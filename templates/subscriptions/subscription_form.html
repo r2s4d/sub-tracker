@@ -28,7 +28,7 @@
         <h2 class="form-section-title">Сервис</h2>
         {% include 'partials/form_fields.html' with form=form.service_section %}
         <p class="form-text mt-n2 mb-0">
-          Нет нужного сервиса? <a href="{% url 'subscriptions:service-create' %}">Добавьте свой</a>
+          Нет нужного сервиса в списке? <a href="{% url 'subscriptions:service-create' %}?next={{ request.get_full_path|urlencode }}">Добавьте свой</a> — после сохранения вернётесь сюда.
         </p>
       </section>
 
@@ -56,8 +56,9 @@
             </div>
             {% endfor %}
           </div>
+          <p class="form-text mb-0 mt-1">Теги — ваши метки для фильтра в списке подписок. <a href="{% url 'subscriptions:tag-create' %}?next={{ request.get_full_path|urlencode }}">Новый тег</a></p>
           {% else %}
-          <p class="form-text mb-0">Тегов пока нет. <a href="{% url 'subscriptions:tag-create' %}">Создайте тег</a>, чтобы группировать подписки.</p>
+          <p class="form-text mb-0">Тегов пока нет. <a href="{% url 'subscriptions:tag-create' %}?next={{ request.get_full_path|urlencode }}">Создайте тег</a> — например, «семья» или «работа», — чтобы потом отбирать подписки по нему.</p>
           {% endif %}
           {% for error in form.tags.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
         </fieldset>
