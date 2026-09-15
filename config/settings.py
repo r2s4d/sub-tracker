@@ -2,7 +2,7 @@
 Django settings for the Subscription Tracker project.
 
 Все секреты и параметры окружения читаются из переменных окружения
-(локально — из файла .env, который не коммитится; шаблон — .env.example).
+(локально - из файла .env, который не коммитится; шаблон - .env.example).
 """
 
 import os

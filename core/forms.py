@@ -4,7 +4,7 @@ from django import forms
 class BootstrapFormMixin:
     """Проставляет виджетам формы CSS-классы Bootstrap.
 
-    Миксин вместо стороннего пакета (django-crispy-forms и т.п.): логика —
+    Миксин вместо стороннего пакета (django-crispy-forms и т.п.): логика -
     десяток строк, а зависимостей меньше.
     """
 

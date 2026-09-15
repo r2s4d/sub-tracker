@@ -5,7 +5,7 @@
 - полиморфизм: один интерфейс monthly_cost() / calculate_next_renewal() для любых подписок;
 - фабрика BillingCalculatorFactory, выбирающая класс по billing_type.
 
-Везде используются несохранённые объекты Subscription(...) — расчёт не ходит в БД,
+Везде используются несохранённые объекты Subscription(...) - расчёт не ходит в БД,
 поэтому хватает SimpleTestCase. Дата «сегодня» всегда передаётся явно, чтобы
 результат не зависел от дня запуска тестов.
 """
@@ -99,31 +99,31 @@ class MonthsBetweenTests(SimpleTestCase):
     """months_between: сколько полных шагов по месяцам от start не выходят за end."""
 
     def test_same_day(self):
-        """Одна и та же дата — ноль месяцев."""
+        """Одна и та же дата - ноль месяцев."""
         self.assertEqual(months_between(date(2026, 1, 15), date(2026, 1, 15)), 0)
 
     def test_less_than_a_month_is_zero(self):
-        """Неполный месяц не считается: с 15 января по 14 февраля — 0."""
+        """Неполный месяц не считается: с 15 января по 14 февраля - 0."""
         self.assertEqual(months_between(date(2026, 1, 15), date(2026, 2, 14)), 0)
         self.assertEqual(months_between(date(2026, 1, 31), date(2026, 2, 27)), 0)
 
     def test_exact_months(self):
-        """Ровно N месяцев (то же число) — N, в том числе через границу года."""
+        """Ровно N месяцев (то же число) - N, в том числе через границу года."""
         self.assertEqual(months_between(date(2026, 1, 15), date(2026, 2, 15)), 1)
         self.assertEqual(months_between(date(2025, 11, 15), date(2026, 2, 15)), 3)
 
     def test_end_of_month_clamp_counts_as_full_month(self):
-        """С 31 января по 28 февраля — полный месяц: шаг прижимается к концу февраля."""
+        """С 31 января по 28 февраля - полный месяц: шаг прижимается к концу февраля."""
         self.assertEqual(months_between(date(2026, 1, 31), date(2026, 2, 28)), 1)
         self.assertEqual(months_between(date(2024, 1, 31), date(2024, 2, 29)), 1)
 
     def test_end_of_month_clamp_not_yet_reached(self):
-        """С 31 января по 30 марта — только 1 месяц: шаг в марте приходится на 31-е."""
+        """С 31 января по 30 марта - только 1 месяц: шаг в марте приходится на 31-е."""
         self.assertEqual(months_between(date(2026, 1, 31), date(2026, 3, 30)), 1)
         self.assertEqual(months_between(date(2026, 1, 31), date(2026, 3, 31)), 2)
 
     def test_leap_day_year(self):
-        """С 29.02.2024 по 28.02.2025 — 12 месяцев (прижатие к 28 февраля)."""
+        """С 29.02.2024 по 28.02.2025 - 12 месяцев (прижатие к 28 февраля)."""
         self.assertEqual(months_between(date(2024, 2, 29), date(2025, 2, 28)), 12)
         self.assertEqual(months_between(date(2024, 2, 29), date(2025, 2, 27)), 11)
 
@@ -134,7 +134,7 @@ class MonthsBetweenTests(SimpleTestCase):
 
 
 class BillingCalculatorAbstractTests(SimpleTestCase):
-    """BillingCalculator — абстрактный класс: создать можно только полноценного наследника."""
+    """BillingCalculator - абстрактный класс: создать можно только полноценного наследника."""
 
     def test_cannot_instantiate_abstract_base(self):
         """Прямое создание BillingCalculator запрещено (TypeError от ABC)."""
@@ -193,7 +193,7 @@ class MonthlyBillingCalculatorTests(SimpleTestCase):
         self.calc = MonthlyBillingCalculator(self.sub)
 
     def test_next_renewal_before_start_is_start(self):
-        """До даты начала ближайшее списание — сама дата начала."""
+        """До даты начала ближайшее списание - сама дата начала."""
         self.assertEqual(self.calc.calculate_next_renewal(today=date(2025, 12, 1)), date(2026, 1, 15))
 
     def test_next_renewal_on_start_day(self):
@@ -201,24 +201,24 @@ class MonthlyBillingCalculatorTests(SimpleTestCase):
         self.assertEqual(self.calc.calculate_next_renewal(today=date(2026, 1, 15)), date(2026, 1, 15))
 
     def test_next_renewal_on_charge_day_is_today(self):
-        """В день очередного списания ближайшее списание — сегодня (включительно)."""
+        """В день очередного списания ближайшее списание - сегодня (включительно)."""
         self.assertEqual(self.calc.calculate_next_renewal(today=date(2026, 4, 15)), date(2026, 4, 15))
 
     def test_next_renewal_day_after_charge_is_next_month(self):
-        """На следующий день после списания ближайшее — через месяц."""
+        """На следующий день после списания ближайшее - через месяц."""
         self.assertEqual(self.calc.calculate_next_renewal(today=date(2026, 4, 16)), date(2026, 5, 15))
 
     def test_next_renewal_across_year(self):
-        """После декабрьского списания следующее — в январе следующего года."""
+        """После декабрьского списания следующее - в январе следующего года."""
         self.assertEqual(self.calc.calculate_next_renewal(today=date(2026, 12, 16)), date(2027, 1, 15))
 
     def test_days_until_renewal(self):
-        """days_until_renewal — разница в днях между сегодня и ближайшим списанием."""
+        """days_until_renewal - разница в днях между сегодня и ближайшим списанием."""
         self.assertEqual(self.calc.days_until_renewal(today=date(2026, 4, 10)), 5)
         self.assertEqual(self.calc.days_until_renewal(today=date(2026, 4, 15)), 0)
 
     def test_anchor_31st_does_not_drift(self):
-        """Подписка от 31 января: 29 февраля (2024 — високосный), затем снова 31 марта.
+        """Подписка от 31 января: 29 февраля (2024 - високосный), затем снова 31 марта.
 
         Даты считаются от опорной даты, а не от предыдущего списания,
         поэтому после короткого февраля число не «уезжает» на 29-е навсегда.
@@ -238,15 +238,15 @@ class MonthlyBillingCalculatorTests(SimpleTestCase):
         )
 
     def test_monthly_cost_is_price(self):
-        """Стоимость в месяц для ежемесячной подписки — её цена."""
+        """Стоимость в месяц для ежемесячной подписки - её цена."""
         self.assertEqual(self.calc.monthly_cost(), Decimal('299.00'))
 
     def test_yearly_cost_is_price_times_12(self):
-        """Годовой эквивалент ежемесячной подписки — цена × 12."""
+        """Годовой эквивалент ежемесячной подписки - цена × 12."""
         self.assertEqual(self.calc.yearly_cost(), Decimal('3588.00'))
 
     def test_charge_dates_half_year(self):
-        """За полугодие — шесть списаний, каждое 15-го числа."""
+        """За полугодие - шесть списаний, каждое 15-го числа."""
         self.assertEqual(
             self.calc.charge_dates(date(2026, 1, 1), date(2026, 6, 30)),
             [date(2026, m, 15) for m in range(1, 7)],
@@ -260,7 +260,7 @@ class MonthlyBillingCalculatorTests(SimpleTestCase):
         )
 
     def test_charge_dates_range_without_charges(self):
-        """Интервал между двумя списаниями — пустой список."""
+        """Интервал между двумя списаниями - пустой список."""
         self.assertEqual(self.calc.charge_dates(date(2026, 2, 16), date(2026, 3, 14)), [])
 
     def test_charge_dates_inverted_range(self):
@@ -268,11 +268,11 @@ class MonthlyBillingCalculatorTests(SimpleTestCase):
         self.assertEqual(self.calc.charge_dates(date(2026, 6, 30), date(2026, 1, 1)), [])
 
     def test_charge_dates_range_before_start(self):
-        """Интервал целиком до даты начала подписки — пустой список."""
+        """Интервал целиком до даты начала подписки - пустой список."""
         self.assertEqual(self.calc.charge_dates(date(2025, 1, 1), date(2025, 12, 31)), [])
 
     def test_expected_amount(self):
-        """Прогноз за интервал — цена × количество списаний: за полугодие 299 × 6."""
+        """Прогноз за интервал - цена × количество списаний: за полугодие 299 × 6."""
         self.assertEqual(
             self.calc.expected_amount(date(2026, 1, 1), date(2026, 6, 30)),
             Decimal('1794.00'),
@@ -293,11 +293,11 @@ class YearlyBillingCalculatorTests(SimpleTestCase):
         self.calc = YearlyBillingCalculator(self.sub)
 
     def test_next_renewal_before_start(self):
-        """До начала подписки ближайшее списание — дата начала."""
+        """До начала подписки ближайшее списание - дата начала."""
         self.assertEqual(self.calc.calculate_next_renewal(today=date(2026, 1, 1)), date(2026, 3, 10))
 
     def test_next_renewal_within_first_year(self):
-        """Внутри первого года ближайшее списание — через год после начала."""
+        """Внутри первого года ближайшее списание - через год после начала."""
         self.assertEqual(self.calc.calculate_next_renewal(today=date(2026, 3, 11)), date(2027, 3, 10))
         self.assertEqual(self.calc.calculate_next_renewal(today=date(2027, 1, 1)), date(2027, 3, 10))
 
@@ -306,11 +306,11 @@ class YearlyBillingCalculatorTests(SimpleTestCase):
         self.assertEqual(self.calc.calculate_next_renewal(today=date(2028, 3, 10)), date(2028, 3, 10))
 
     def test_next_renewal_several_years_later(self):
-        """Спустя несколько лет — ближайшая следующая годовщина."""
+        """Спустя несколько лет - ближайшая следующая годовщина."""
         self.assertEqual(self.calc.calculate_next_renewal(today=date(2029, 7, 1)), date(2030, 3, 10))
 
     def test_leap_day_anchor(self):
-        """Подписка от 29.02.2024: в невисокосные годы 28 февраля, в 2028 — снова 29-го."""
+        """Подписка от 29.02.2024: в невисокосные годы 28 февраля, в 2028 - снова 29-го."""
         calc = YearlyBillingCalculator(make_yearly(start=date(2024, 2, 29)))
         self.assertEqual(calc.calculate_next_renewal(today=date(2024, 3, 1)), date(2025, 2, 28))
         self.assertEqual(calc.calculate_next_renewal(today=date(2025, 3, 1)), date(2026, 2, 28))
@@ -321,7 +321,7 @@ class YearlyBillingCalculatorTests(SimpleTestCase):
         )
 
     def test_monthly_cost_is_price_div_12_rounded_to_kopecks(self):
-        """Стоимость в месяц — цена / 12, округлённая до копеек (ROUND_HALF_UP): 8900 / 12 = 741.67."""
+        """Стоимость в месяц - цена / 12, округлённая до копеек (ROUND_HALF_UP): 8900 / 12 = 741.67."""
         self.assertEqual(self.calc.monthly_cost(), Decimal('741.67'))
 
     def test_yearly_cost_overridden_with_exact_price(self):
@@ -342,18 +342,18 @@ class YearlyBillingCalculatorTests(SimpleTestCase):
         self.assertEqual(calc.yearly_cost(), Decimal('1200.00'))
 
     def test_charge_dates_one_per_year(self):
-        """За три года — три списания, по одному в годовщину."""
+        """За три года - три списания, по одному в годовщину."""
         self.assertEqual(
             self.calc.charge_dates(date(2026, 1, 1), date(2028, 12, 31)),
             [date(2026, 3, 10), date(2027, 3, 10), date(2028, 3, 10)],
         )
 
     def test_charge_dates_empty_between_anniversaries(self):
-        """Интервал внутри года между годовщинами — списаний нет."""
+        """Интервал внутри года между годовщинами - списаний нет."""
         self.assertEqual(self.calc.charge_dates(date(2026, 4, 1), date(2027, 3, 9)), [])
 
     def test_expected_amount_uses_full_price_per_charge(self):
-        """Прогноз для ежегодной подписки — полная цена за каждую годовщину в интервале."""
+        """Прогноз для ежегодной подписки - полная цена за каждую годовщину в интервале."""
         self.assertEqual(self.calc.expected_amount(date(2026, 3, 1), date(2026, 3, 31)), Decimal('8900.00'))
         self.assertEqual(self.calc.expected_amount(date(2026, 4, 1), date(2026, 4, 30)), Decimal('0.00'))
 
@@ -384,7 +384,7 @@ class TrialBillingCalculatorTests(SimpleTestCase):
         self.assertFalse(self.calc.is_trial_active(today=date(2026, 10, 1)))
 
     def test_days_until_trial_end(self):
-        """Сколько дней осталось до конца триала; после окончания — отрицательное число."""
+        """Сколько дней осталось до конца триала; после окончания - отрицательное число."""
         self.assertEqual(self.calc.days_until_trial_end(today=date(2026, 9, 12)), 3)
         self.assertEqual(self.calc.days_until_trial_end(today=date(2026, 9, 15)), 0)
         self.assertEqual(self.calc.days_until_trial_end(today=date(2026, 9, 17)), -2)
@@ -396,17 +396,17 @@ class TrialBillingCalculatorTests(SimpleTestCase):
         self.assertEqual(self.calc.after_trial.anchor, date(2026, 9, 15))
 
     def test_next_renewal_during_trial_is_trial_end(self):
-        """Во время триала ближайшее списание — дата его окончания."""
+        """Во время триала ближайшее списание - дата его окончания."""
         self.assertEqual(self.calc.calculate_next_renewal(today=date(2026, 9, 3)), date(2026, 9, 15))
         self.assertEqual(self.calc.calculate_next_renewal(today=date(2026, 9, 15)), date(2026, 9, 15))
 
     def test_next_renewal_after_trial_monthly(self):
-        """После триала с помесячной оплатой — шаг в месяц от даты окончания триала."""
+        """После триала с помесячной оплатой - шаг в месяц от даты окончания триала."""
         self.assertEqual(self.calc.calculate_next_renewal(today=date(2026, 9, 16)), date(2026, 10, 15))
         self.assertEqual(self.calc.calculate_next_renewal(today=date(2027, 1, 20)), date(2027, 2, 15))
 
     def test_next_renewal_after_trial_yearly(self):
-        """После триала с годовой оплатой — шаг в год от даты окончания триала."""
+        """После триала с годовой оплатой - шаг в год от даты окончания триала."""
         calc = TrialBillingCalculator(make_trial(price='3000.00', period_after=BillingPeriod.YEARLY))
         self.assertIsInstance(calc.after_trial, YearlyBillingCalculator)
         self.assertEqual(calc.calculate_next_renewal(today=date(2026, 9, 10)), date(2026, 9, 15))
@@ -419,14 +419,14 @@ class TrialBillingCalculatorTests(SimpleTestCase):
         self.assertEqual(self.calc.yearly_cost(), Decimal('3588.00'))
 
     def test_monthly_cost_uses_after_trial_period_yearly(self):
-        """Если после триала оплата раз в год, стоимость в месяц — цена / 12,
+        """Если после триала оплата раз в год, стоимость в месяц - цена / 12,
         а годовой эквивалент делегируется годовому калькулятору и равен цене."""
         calc = TrialBillingCalculator(make_trial(price='2999.00', period_after=BillingPeriod.YEARLY))
         self.assertEqual(calc.monthly_cost(), Decimal('249.92'))
         self.assertEqual(calc.yearly_cost(), Decimal('2999.00'))
 
     def test_charge_dates_start_from_trial_end(self):
-        """Списаний до конца триала нет; первое — в день окончания триала."""
+        """Списаний до конца триала нет; первое - в день окончания триала."""
         self.assertEqual(
             self.calc.charge_dates(date(2026, 9, 1), date(2026, 12, 31)),
             [date(2026, 9, 15), date(2026, 10, 15), date(2026, 11, 15), date(2026, 12, 15)],
@@ -474,14 +474,14 @@ class BillingCalculatorFactoryTests(SimpleTestCase):
             BillingCalculatorFactory.create(sub)
 
     def test_all_calculators_share_base_class(self):
-        """Любой калькулятор из фабрики — экземпляр абстрактного BillingCalculator."""
+        """Любой калькулятор из фабрики - экземпляр абстрактного BillingCalculator."""
         for sub in (make_monthly(), make_yearly(), make_trial()):
             with self.subTest(billing_type=sub.billing_type):
                 self.assertIsInstance(BillingCalculatorFactory.create(sub), BillingCalculator)
 
     def test_polymorphic_monthly_total(self):
         """Полиморфизм: сумма расходов в месяц по смешанному списку подписок считается
-        одним вызовом monthly_cost() — без isinstance и без проверок billing_type.
+        одним вызовом monthly_cost() - без isinstance и без проверок billing_type.
 
         299.00 (месяц) + 741.67 (8900 в год) + 199.00 (триал → месяц) + 250.00 (триал → 3000 в год)
         = 1489.67
@@ -499,7 +499,7 @@ class BillingCalculatorFactoryTests(SimpleTestCase):
         self.assertEqual(total, Decimal('1489.67'))
 
     def test_polymorphic_next_renewals(self):
-        """Полиморфизм: ближайшие продления разных подписок — один и тот же вызов."""
+        """Полиморфизм: ближайшие продления разных подписок - один и тот же вызов."""
         today = date(2026, 9, 10)
         subscriptions = [
             make_monthly(start=date(2026, 1, 15)),
@@ -519,7 +519,7 @@ class BillingEdgeCaseTests(SimpleTestCase):
     """Граничные случаи: нулевая цена и точность Decimal."""
 
     def test_zero_price(self):
-        """Бесплатная подписка (цена 0) — все суммы нулевые, даты списаний считаются как обычно."""
+        """Бесплатная подписка (цена 0) - все суммы нулевые, даты списаний считаются как обычно."""
         for sub in (make_monthly(price='0'), make_yearly(price='0'), make_trial(price='0')):
             with self.subTest(billing_type=sub.billing_type):
                 calc = BillingCalculatorFactory.create(sub)
@@ -531,7 +531,7 @@ class BillingEdgeCaseTests(SimpleTestCase):
         self.assertEqual(len(calc.charge_dates(date(2026, 1, 1), date(2026, 12, 31))), 12)
 
     def test_results_are_decimal_not_float(self):
-        """Все денежные результаты — Decimal с двумя знаками после запятой, float не используется."""
+        """Все денежные результаты - Decimal с двумя знаками после запятой, float не используется."""
         for sub in (make_monthly(price='199.99'), make_yearly(price='999.99'), make_trial(price='149.50')):
             with self.subTest(billing_type=sub.billing_type):
                 calc = BillingCalculatorFactory.create(sub)
@@ -554,6 +554,6 @@ class BillingEdgeCaseTests(SimpleTestCase):
         )
 
     def test_yearly_rounding_half_up(self):
-        """Округление до копеек — по правилу ROUND_HALF_UP: 100.02 / 12 = 8.335 → 8.34."""
+        """Округление до копеек - по правилу ROUND_HALF_UP: 100.02 / 12 = 8.335 → 8.34."""
         calc = YearlyBillingCalculator(make_yearly(price='100.02'))
         self.assertEqual(calc.monthly_cost(), Decimal('8.34'))

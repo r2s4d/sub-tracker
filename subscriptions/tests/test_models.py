@@ -119,7 +119,7 @@ class SubscriptionCleanTests(ModelTestBase):
         return Subscription(**data)
 
     def test_trial_end_before_start(self):
-        """Конец пробного периода раньше даты начала — ошибка валидации."""
+        """Конец пробного периода раньше даты начала - ошибка валидации."""
         sub = self.build(
             billing_type=BillingType.TRIAL,
             trial_end_date=date(2026, 2, 1),
@@ -138,7 +138,7 @@ class SubscriptionCleanTests(ModelTestBase):
         self.assertIn('billing_period_after_trial', ctx.exception.message_dict)
 
     def test_foreign_payment_method(self):
-        """Способ оплаты другого пользователя — ошибка валидации."""
+        """Способ оплаты другого пользователя - ошибка валидации."""
         pm = PaymentMethod.objects.create(user=self.other, name='Чужая карта')
         sub = self.build(payment_method=pm)
         with self.assertRaises(ValidationError) as ctx:
@@ -151,7 +151,7 @@ class SubscriptionCleanTests(ModelTestBase):
         self.build(payment_method=pm).clean()
 
     def test_foreign_custom_service(self):
-        """Свой сервис другого пользователя — ошибка валидации."""
+        """Свой сервис другого пользователя - ошибка валидации."""
         foreign = Service.objects.create(name='test-Чужой', category=self.category, owner=self.other)
         sub = self.build(service=foreign)
         with self.assertRaises(ValidationError) as ctx:
@@ -177,9 +177,9 @@ class SubscriptionPropertiesTests(ModelTestBase):
         self.assertEqual(str(sub), 'test-Каталожный')
 
     def test_display_name_with_title(self):
-        """С названием тарифа — «Сервис — Тариф»."""
+        """С названием тарифа - «Сервис - Тариф»."""
         sub = self.make_subscription(title='Семейный')
-        self.assertEqual(sub.display_name, 'test-Каталожный — Семейный')
+        self.assertEqual(sub.display_name, 'test-Каталожный (Семейный)')
 
     def test_category_goes_through_service(self):
         """Категория подписки берётся из сервиса."""
@@ -286,7 +286,7 @@ class NotificationLogTests(ModelTestBase):
             NotificationLog.objects.create(**data)
 
     def test_different_event_date_allowed(self):
-        """То же уведомление с другой датой события — допустимо."""
+        """То же уведомление с другой датой события - допустимо."""
         sub = self.make_subscription()
         data = {
             'subscription': sub,

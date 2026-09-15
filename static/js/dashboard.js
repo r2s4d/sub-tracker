@@ -1,7 +1,7 @@
 /*
  * Дашборд: кольцевая диаграмма по категориям и график расходов по месяцам.
  *
- * Подсказки — свои HTML-карточки (external tooltip Chart.js), оформленные как
+ * Подсказки - свои HTML-карточки (external tooltip Chart.js), оформленные как
  * строка выписки из остального интерфейса. Данные вставляются через textContent,
  * а не innerHTML: названия подписок вводит пользователь, HTML из них не выполнится.
  */
@@ -69,10 +69,10 @@
   const EDGE = 8;
 
   /*
-   * outside = true — карточка ставится снаружи графика (для кольца): с той стороны,
-   * где курсор, а если там нет места — с противоположной, в крайнем случае под кольцом.
+   * outside = true - карточка ставится снаружи графика (для кольца): с той стороны,
+   * где курсор, а если там нет места - с противоположной, в крайнем случае под кольцом.
    * Иначе при наведении на левую половину карточка ложилась на кольцо и закрывала проценты.
-   * outside = false — рядом с курсором (для линейного графика).
+   * outside = false - рядом с курсором (для линейного графика).
    */
   function placeTip(tip, chart, model, { outside = false } = {}) {
     if (model.opacity === 0) {
@@ -97,7 +97,7 @@
       else if (fitsRight(rightSide)) left = rightSide;
       else if (fitsLeft(leftSide)) left = leftSide;
       else {
-        // Узкий экран: ни слева, ни справа не помещается — под кольцом
+        // Узкий экран: ни слева, ни справа не помещается - под кольцом
         left = rect.left + rect.width / 2 - width / 2;
         top = rect.bottom + gap;
       }
@@ -374,7 +374,7 @@
   const detailUrl = (pk) => monthDetail.dataset.detailUrl.replace('/0/', `/${pk}/`);
 
   function highlightMonth(index) {
-    // Выбранная точка крупнее — видно, чей список открыт
+    // Выбранная точка крупнее - видно, чей список открыт
     const radius = months.actual.map((_, i) => (i === index ? 7 : 3));
     monthsChart.data.datasets[0].pointRadius = radius;
     monthsChart.update('none');

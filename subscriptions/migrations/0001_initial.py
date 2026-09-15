@@ -64,7 +64,7 @@ class Migration(migrations.Migration):
             name='Subscription',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('title', models.CharField(blank=True, help_text='Необязательно, например «Семейный». По умолчанию — название сервиса.', max_length=100, verbose_name='название тарифа')),
+                ('title', models.CharField(blank=True, help_text='Необязательно, например «Семейный». По умолчанию используется название сервиса.', max_length=100, verbose_name='название тарифа')),
                 ('price', models.DecimalField(decimal_places=2, max_digits=10, validators=[django.core.validators.MinValueValidator(0)], verbose_name='цена за период, ₽')),
                 ('billing_type', models.CharField(choices=[('monthly', 'Ежемесячно'), ('yearly', 'Ежегодно'), ('trial', 'Пробный период')], default='monthly', max_length=16, verbose_name='тип оплаты')),
                 ('start_date', models.DateField(verbose_name='дата начала')),

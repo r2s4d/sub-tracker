@@ -1,6 +1,6 @@
 """Данные для дашборда: итоги, расходы по категориям, динамика по месяцам.
 
-Функции не знают про HTTP и шаблоны — принимают пользователя и дату «сегодня»,
+Функции не знают про HTTP и шаблоны - принимают пользователя и дату «сегодня»,
 поэтому их легко тестировать на фиксированных датах.
 
 Здесь виден полиморфизм из billing.py в действии: итоги считаются как сумма
@@ -38,7 +38,7 @@ class SpendingSummary:
     trial_count: int
     trial_monthly: Decimal  # часть месячной суммы от подписок, которые ещё на пробном периоде
     budget: Decimal | None
-    budget_ratio: float | None  # 0.8 = потрачено 80% бюджета; >1 — бюджет превышен
+    budget_ratio: float | None  # 0.8 = потрачено 80% бюджета; >1 - бюджет превышен
 
     @property
     def budget_left(self) -> Decimal | None:
@@ -51,7 +51,7 @@ class SpendingSummary:
 
 @dataclass
 class CategoryItem:
-    """Подписка внутри категории — для раскрытия сектора диаграммы."""
+    """Подписка внутри категории - для раскрытия сектора диаграммы."""
 
     pk: int
     name: str
@@ -65,7 +65,7 @@ class CategorySpending:
     slug: str
     color: str
     monthly: Decimal
-    share: Decimal  # проценты, 0–100, один знак после запятой
+    share: Decimal  # проценты, 0-100, один знак после запятой
     count: int
     items: list[CategoryItem] = field(default_factory=list)
 
@@ -161,7 +161,7 @@ def spending_summary(user, today: date, pairs=None) -> SpendingSummary:
     monthly_total = sum((calc.monthly_cost() for _, calc in pairs), ZERO)
     yearly_total = sum((calc.yearly_cost() for _, calc in pairs), ZERO)
 
-    # Пробные периоды — через метод калькулятора, а не проверку поля модели.
+    # Пробные периоды - через метод калькулятора, а не проверку поля модели.
     on_trial = [calc for _, calc in pairs if getattr(calc, 'is_trial_active', None) and calc.is_trial_active(today)]
     budget = user.profile.monthly_budget
     return SpendingSummary(
@@ -227,7 +227,7 @@ def _month_label(month: date, is_first: bool) -> str:
 def monthly_spending(user, today: date, months: int = 12, pairs=None) -> list[MonthPoint]:
     """Оплачено по месяцам за последние `months` месяцев + план на текущий и следующий.
 
-    Факт берётся из Payment (одна агрегирующая выборка), план — из калькуляторов:
+    Факт берётся из Payment (одна агрегирующая выборка), план - из калькуляторов:
     сколько списаний каждой активной подписки попадает в месяц.
     """
     pairs = _active_with_calculators(user) if pairs is None else pairs
@@ -235,7 +235,7 @@ def monthly_spending(user, today: date, months: int = 12, pairs=None) -> list[Mo
     first = add_months(current, -(months - 1))
     next_month = add_months(current, 1)
 
-    # Одна выборка: суммы по (месяц, подписка). Итог месяца — сумма разбивки.
+    # Одна выборка: суммы по (месяц, подписка). Итог месяца - сумма разбивки.
     rows = (
         Payment.objects.filter(subscription__user=user, paid_at__gte=first, paid_at__lt=next_month)
         .annotate(month=TruncMonth('paid_at'))
@@ -248,7 +248,7 @@ def monthly_spending(user, today: date, months: int = 12, pairs=None) -> list[Mo
         month = row['month'].date() if hasattr(row['month'], 'date') else row['month']
         name = row['subscription__service__name']
         if row['subscription__title']:
-            name = f"{name} — {row['subscription__title']}"
+            name = f"{name} ({row['subscription__title']})"
         paid[month] += row['total']
         breakdown[month].append((name, row['total']))
 
@@ -274,7 +274,7 @@ def monthly_spending(user, today: date, months: int = 12, pairs=None) -> list[Mo
 def charge_calendar(user, today: date, pairs=None, months: int = 2) -> list[CalendarMonth]:
     """Календарь списаний на текущий и следующий месяц: даты берутся у калькуляторов.
 
-    Сетка — полные недели с понедельника; дни соседних месяцев помечены in_month=False.
+    Сетка - полные недели с понедельника; дни соседних месяцев помечены in_month=False.
     """
     pairs = _active_with_calculators(user) if pairs is None else pairs
     result = []
@@ -346,7 +346,7 @@ def month_payments(user, today: date, months: int = 12) -> list[list[dict]]:
 def month_change(user, today: date, pairs=None) -> MonthChange:
     """Добавленные и отключённые за последний месяц подписки.
 
-    Добавленные — активные с датой начала за последний месяц. Отключённые — неактивные,
+    Добавленные - активные с датой начала за последний месяц. Отключённые - неактивные,
     изменённые за последний месяц: отдельной даты отключения в модели нет,
     поэтому это приближение по updated_at (записано в DECISIONS.md).
     """

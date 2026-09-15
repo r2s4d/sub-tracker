@@ -4,12 +4,11 @@
 {% for item in items %}
 {{ item.name }}
   Пробный период заканчивается {{ item.when }}, {{ item.date|date:"j E" }}.
-  Спишется {{ item.amount|rub }} {{ item.period }}{% if item.payment_method %} — {{ item.payment_method }}{% endif %}.
+  Спишется {{ item.amount|rub }} {{ item.period }}{% if item.payment_method %} с карты {{ item.payment_method }}{% endif %}.
   Подробнее: {{ item.url }}
 {% endfor %}
 Если подписка не нужна, отмените её в самом сервисе до окончания пробного периода.
 
-—
 Subscription Tracker
 {{ site_url }}
 {% endautoescape %}

@@ -1,6 +1,6 @@
 """Data-миграция: фиксированный справочник категорий и стартовый каталог сервисов.
 
-Почему данные в миграции, а не в фикстуре: категории — часть схемы приложения
+Почему данные в миграции, а не в фикстуре: категории - часть схемы приложения
 (ТЗ, раздел 2), они должны появляться автоматически при `migrate` на любой
 новой БД (локально, в тестах, на VPS), без ручного `loaddata`.
 
@@ -99,7 +99,7 @@ def seed_catalog(apps, schema_editor):
 
     for slug, services in SERVICES.items():
         for name, website in services:
-            # owner=None — запись общего каталога, видна всем пользователям.
+            # owner=None - запись общего каталога, видна всем пользователям.
             Service.objects.update_or_create(
                 name=name,
                 owner=None,
@@ -111,7 +111,7 @@ def unseed_catalog(apps, schema_editor):
     """Откат: удаляет только то, что создала эта миграция.
 
     Пользовательские сервисы (owner != NULL) не трогаем. Сначала сервисы,
-    потом категории — FK Service.category защищён PROTECT.
+    потом категории - FK Service.category защищён PROTECT.
     """
     Category = apps.get_model('subscriptions', 'Category')
     Service = apps.get_model('subscriptions', 'Service')

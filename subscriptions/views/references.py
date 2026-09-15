@@ -1,6 +1,6 @@
 """Справочники пользователя: способы оплаты, теги и свои сервисы.
 
-Изоляция — через OwnedQuerysetMixin (чужой pk → 404), владелец новой
+Изоляция - через OwnedQuerysetMixin (чужой pk → 404), владелец новой
 записи назначается во view, а не берётся из POST.
 """
 
@@ -18,7 +18,7 @@ from ..models import PaymentMethod, Service, Tag
 
 
 def subscriptions_in(n):
-    """«в 1 подписке», «в 5 подписках» — предложный падеж, две формы."""
+    """«в 1 подписке», «в 5 подписках» - предложный падеж, две формы."""
     word = 'подписке' if n % 10 == 1 and n % 100 != 11 else 'подписках'
     return f'в {n} {word}'
 
@@ -108,7 +108,7 @@ class PaymentMethodDeleteView(OwnedQuerysetMixin, SuccessMessageMixin, CancelUrl
         context = super().get_context_data(**kwargs)
         context['delete_title'] = 'Удалить способ оплаты?'
         context['delete_warning'] = (
-            'Подписки и история платежей останутся — у них просто не будет указан способ оплаты.'
+            'Подписки и история платежей останутся, у них просто не будет указан способ оплаты.'
         )
         return context
 
@@ -239,7 +239,7 @@ class ServiceDeleteView(OwnedQuerysetMixin, SuccessMessageMixin, CancelUrlMixin,
         return context
 
     def form_valid(self, form):
-        # Subscription.service — PROTECT: удалить используемый сервис БД не даст.
+        # Subscription.service - PROTECT: удалить используемый сервис БД не даст.
         try:
             return super().form_valid(form)
         except ProtectedError:

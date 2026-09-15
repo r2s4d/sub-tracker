@@ -10,11 +10,11 @@
 
     BillingCalculatorFactory.create(subscription) → нужный калькулятор по billing_type
 
-В базе данных подписка — одна таблица с полем billing_type. Разное поведение
-для разных типов оплаты — не в ORM, а в этих классах. Код, который считает
+В базе данных подписка - одна таблица с полем billing_type. Разное поведение
+для разных типов оплаты - не в ORM, а в этих классах. Код, который считает
 расходы (дашборд, уведомления), работает с любым калькулятором одинаково:
 вызывает monthly_cost() и calculate_next_renewal(), не проверяя тип подписки.
-Это и есть полиморфизм: один интерфейс — разные реализации.
+Это и есть полиморфизм: один интерфейс - разные реализации.
 """
 
 from abc import ABC, abstractmethod
@@ -37,7 +37,7 @@ def _money(value: Decimal) -> Decimal:
 class BillingCalculator(ABC):
     """Общий интерфейс всех калькуляторов.
 
-    Абстрактный класс нельзя создать напрямую — только наследника, который
+    Абстрактный класс нельзя создать напрямую - только наследника, который
     реализовал оба абстрактных метода.
     """
 
@@ -83,7 +83,7 @@ class PeriodicBillingCalculator(BillingCalculator):
 
     def __init__(self, subscription: Subscription, anchor: date | None = None):
         super().__init__(subscription)
-        # Для обычной подписки опорная дата — начало, для бывшего триала — его конец.
+        # Для обычной подписки опорная дата - начало, для бывшего триала - его конец.
         self.anchor = anchor or subscription.start_date
 
     def _charge_at(self, index: int) -> date:
@@ -127,10 +127,10 @@ class YearlyBillingCalculator(PeriodicBillingCalculator):
 
 
 class TrialBillingCalculator(BillingCalculator):
-    """Пробный период: до trial_end_date бесплатно, потом — обычная периодическая оплата.
+    """Пробный период: до trial_end_date бесплатно, потом - обычная периодическая оплата.
 
     Поведение «после триала» не дублируется, а делегируется калькулятору
-    нужного периода (композиция): первое списание — в день окончания триала.
+    нужного периода (композиция): первое списание - в день окончания триала.
     """
 
     _after_trial_classes = {
@@ -156,7 +156,7 @@ class TrialBillingCalculator(BillingCalculator):
 
     def monthly_cost(self) -> Decimal:
         # Считаем по цене после триала: это расход, который начнётся,
-        # если не отменить подписку, — именно его важно видеть в бюджете.
+        # если не отменить подписку, - именно его важно видеть в бюджете.
         return self.after_trial.monthly_cost()
 
     def yearly_cost(self) -> Decimal:
@@ -171,7 +171,7 @@ class BillingCalculatorFactory:
 
     Вызывающему коду не нужно знать, какие бывают калькуляторы. Чтобы добавить
     новый тип оплаты (например, квартальный), достаточно написать класс
-    и добавить строку в _registry — остальной код не меняется.
+    и добавить строку в _registry - остальной код не меняется.
     """
 
     _registry: dict[str, type[BillingCalculator]] = {

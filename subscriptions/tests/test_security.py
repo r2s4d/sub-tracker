@@ -45,7 +45,7 @@ class SignUpEdgeCaseTests(TestCase):
         self.assertFalse(User.objects.exclude(username__in=['existing']).exists())
 
     def test_username_with_html_rejected(self):
-        """В имени пользователя допустимы только буквы, цифры и @ . + - _ — теги не пройдут."""
+        """В имени пользователя допустимы только буквы, цифры и @ . + - _ - теги не пройдут."""
         self.assert_rejected(self.signup(username=XSS_SCRIPT), 'username')
 
     def test_username_with_sql_rejected(self):
@@ -68,7 +68,7 @@ class SignUpEdgeCaseTests(TestCase):
         self.assert_rejected(self.signup(username='EXISTING', email='new@example.com'), 'username')
 
     def test_email_header_injection_rejected(self):
-        """Перевод строки в почте мог бы добавить заголовок письма (Bcc) — валидатор его не пропускает."""
+        """Перевод строки в почте мог бы добавить заголовок письма (Bcc) - валидатор его не пропускает."""
         self.assert_rejected(self.signup(email='victim@example.com\nBcc: spam@example.com'), 'email')
 
     def test_invalid_email_rejected(self):
@@ -203,7 +203,7 @@ class DangerousInputTests(TestCase):
         self.category = make_category('danger')
 
     def test_javascript_url_rejected_for_service_website(self):
-        """В ссылку «сайт» нельзя подставить javascript: — URLField пропускает только http(s)/ftp(s)."""
+        """В ссылку «сайт» нельзя подставить javascript: - URLField пропускает только http(s)/ftp(s)."""
         response = self.client.post(reverse('subscriptions:service-create'), {
             'name': 'test-опасный', 'category': self.category.pk, 'website': 'javascript:alert(1)',
         })

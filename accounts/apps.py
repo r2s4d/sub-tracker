@@ -7,4 +7,4 @@ class AccountsConfig(AppConfig):
     verbose_name = 'Аккаунты'
 
     def ready(self):
-        from . import signals  # noqa: F401 — регистрирует обработчики сигналов
+        from . import signals  # noqa: F401 - регистрирует обработчики сигналов

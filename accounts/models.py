@@ -18,7 +18,7 @@ class UserProfile(models.Model):
     notification_email = models.EmailField(
         'почта для уведомлений',
         blank=True,
-        help_text='Если не указана — используется почта аккаунта.',
+        help_text='Если не указана, используется почта аккаунта.',
     )
     notify_days_before = models.PositiveSmallIntegerField(
         'предупреждать за, дней',

@@ -47,7 +47,7 @@ class NotificationDataMixin:
 
 class CollectRemindersTests(NotificationDataMixin, TestCase):
     def test_trial_end_and_renewal_kinds(self):
-        """Конец триала — TRIAL_ENDING, обычное продление — RENEWAL_UPCOMING."""
+        """Конец триала - TRIAL_ENDING, обычное продление - RENEWAL_UPCOMING."""
         reminders = collect_reminders(self.user, TODAY, horizon_days=30)
         kinds = {r.subscription.pk: r.kind for r in reminders}
         self.assertEqual(kinds[self.trial.pk], NotificationLog.Kind.TRIAL_ENDING)
@@ -72,7 +72,7 @@ class CollectRemindersTests(NotificationDataMixin, TestCase):
         self.assertNotIn(self.monthly, [r.subscription for r in reminders])
 
     def test_after_trial_end_it_is_a_regular_renewal(self):
-        """Когда триал закончился, следующее списание — обычное продление."""
+        """Когда триал закончился, следующее списание - обычное продление."""
         reminders = collect_reminders(self.user, date(2026, 9, 17), horizon_days=40)
         trial_reminder = next(r for r in reminders if r.subscription == self.trial)
         self.assertEqual(trial_reminder.kind, NotificationLog.Kind.RENEWAL_UPCOMING)
@@ -92,7 +92,7 @@ class DashboardNotifierTests(NotificationDataMixin, TestCase):
         self.assertEqual(DashboardNotifier(limit=1).deliver(self.user, reminders), reminders[:1])
 
     def test_has_no_side_effects(self):
-        """Дашборд не пишет журнал и не шлёт писем — только показывает."""
+        """Дашборд не пишет журнал и не шлёт писем - только показывает."""
         DashboardNotifier().deliver(self.user, collect_reminders(self.user, TODAY))
         self.assertFalse(NotificationLog.objects.exists())
         self.assertEqual(len(mail.outbox), 0)
@@ -124,7 +124,7 @@ class EmailNotifierTests(NotificationDataMixin, TestCase):
         self.assertEqual(message.alternatives[0][1], 'text/html')
 
     def test_one_email_per_user_for_several_trials(self):
-        """Несколько триалов одного пользователя — одно письмо со всеми."""
+        """Несколько триалов одного пользователя - одно письмо со всеми."""
         second = make_trial(self.user, self.service, start_date=date(2026, 9, 1), trial_end_date=date(2026, 9, 15))
         delivered = self.deliver()
         self.assertEqual({r.subscription for r in delivered}, {self.trial, second})
@@ -154,14 +154,14 @@ class EmailNotifierTests(NotificationDataMixin, TestCase):
         self.assertEqual(mail.outbox[0].to, ['work@example.com'])
 
     def test_no_address_no_email(self):
-        """Без почты письмо не отправляется и в журнал ничего не пишется — можно добавить почту позже."""
+        """Без почты письмо не отправляется и в журнал ничего не пишется - можно добавить почту позже."""
         self.user.email = ''
         self.user.save()
         self.assertEqual(self.deliver(), [])
         self.assertFalse(NotificationLog.objects.exists())
 
     def test_failed_sending_leaves_no_log(self):
-        """Если SMTP упал, журнал откатывается — следующий запуск попробует снова."""
+        """Если SMTP упал, журнал откатывается - следующий запуск попробует снова."""
         with mock.patch('django.core.mail.EmailMultiAlternatives.send', side_effect=OSError('smtp down')):
             with self.assertRaises(OSError):
                 self.deliver()
