@@ -1,0 +1,15 @@
+{% load money %}{% autoescape off %}Здравствуйте{% if user.first_name %}, {{ user.first_name }}{% endif %}!
+
+{% if items|length == 1 %}Скоро закончится пробный период подписки. После этого начнутся списания:{% else %}Скоро закончатся пробные периоды подписок. После этого начнутся списания:{% endif %}
+{% for item in items %}
+{{ item.name }}
+  Пробный период заканчивается {{ item.when }}, {{ item.date|date:"j E" }}.
+  Спишется {{ item.amount|rub }} {{ item.period }}{% if item.payment_method %} — {{ item.payment_method }}{% endif %}.
+  Подробнее: {{ item.url }}
+{% endfor %}
+Если подписка не нужна, отмените её в самом сервисе до окончания пробного периода.
+
+—
+Subscription Tracker
+{{ site_url }}
+{% endautoescape %}
