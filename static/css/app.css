@@ -428,7 +428,7 @@ a { text-underline-offset: 3px; }
   border-bottom: 1px solid var(--st-line);
 }
 @media (min-width: 992px) {
-  .dash-hero { grid-template-columns: minmax(0, 1fr) 20rem; }
+  .dash-hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 18rem; }
 }
 .dash-hero-label { font-size: 1rem; font-weight: 500; color: var(--st-muted); letter-spacing: 0; margin: 0 0 .35rem; }
 .dash-hero-amount { margin: 0; font-size: clamp(2.75rem, 7vw, 4.25rem); font-weight: 650; letter-spacing: -0.035em; line-height: 1; }
@@ -683,3 +683,144 @@ a { text-underline-offset: 3px; }
 }
 /* В списке дня нет колонки «когда» - две колонки: название и сумма */
 .cal-detail .dash-upcoming-row { grid-template-columns: minmax(0, 1fr) auto; }
+
+.dash-change-more { color: var(--st-muted); padding-left: 1.3rem; }
+.dash-hero-side .dash-hero-change { margin-top: 0; }
+
+/* ==========================================================================
+   Обзор на один экран: 1920x1080 (окно ~1920x950) и MacBook Air 13" (~1440x740)
+   Страница не прокручивается: верхняя строка + три колонки на всю оставшуюся
+   высоту. Раскрытые списки прокручиваются внутри своей колонки.
+   На меньших окнах остаётся обычная раскладка, чтобы ничего не обрезалось.
+   ========================================================================== */
+@media (min-width: 1280px) and (min-height: 680px) {
+  .content.content-dash {
+    max-width: 1680px;
+    height: 100vh;
+    padding: 1.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .content-dash .flash { flex: none; }
+
+  .content-dash .dash-hero {
+    flex: none;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) 17rem;
+    align-items: end;
+    gap: 1rem 2.5rem;
+    padding: 0 0 1.1rem;
+    margin-bottom: 1.1rem;
+  }
+
+  .content-dash .dash-grid {
+    flex: 1 1 auto;
+    min-height: 0;
+    /* Колонки разной ширины по важности: график шире всех */
+    grid-template-columns: minmax(19rem, .95fr) minmax(0, 1.35fr) minmax(19rem, .9fr);
+    grid-template-rows: minmax(0, 1fr);
+    gap: 1rem;
+  }
+  .content-dash .dash-grid > .panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .content-dash .dash-grid > .panel > .panel-head { flex: none; }
+  .content-dash .dash-wide { grid-column: auto; order: 2; }
+  .content-dash .dash-upcoming { order: 3; max-height: none; }
+
+  /* Категории: кольцо над легендой, легенда прокручивается при раскрытии */
+  .content-dash .dash-categories {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    grid-template-columns: 1fr;
+    align-content: start;
+    gap: 1rem;
+  }
+  .content-dash .dash-doughnut { position: relative; top: auto; }
+
+  /* График занимает всю свободную высоту колонки; платежи месяца и таблица делят её */
+  .content-dash .dash-wide > .panel-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .content-dash .dash-line { flex: 1 1 auto; height: auto; min-height: 9rem; }
+  .content-dash .month-detail { flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; max-height: 55%; }
+  .content-dash .month-detail[hidden] { display: none; }
+  .content-dash .month-detail-list { flex: 1 1 auto; min-height: 0; max-height: none; }
+  .content-dash .dash-table { flex: none; }
+  .content-dash .dash-table[open] { flex: 0 1 auto; max-height: 45%; overflow-y: auto; }
+
+  /* Календарь: сетка фиксированная, список дня или ближайших забирает остаток и прокручивается */
+  .content-dash .cal { flex: none; }
+  .content-dash [data-upcoming],
+  .content-dash .cal-detail:not([hidden]) {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .content-dash [data-upcoming][hidden] { display: none; }
+  .content-dash .cal-detail .ledger,
+  .content-dash .dash-upcoming-list { flex: 1 1 auto; min-height: 0; max-height: none; overflow-y: auto; }
+}
+
+/* MacBook Air 13" и другие окна пониже: плотнее отступы, меньше кольцо и ячейки */
+@media (min-width: 1280px) and (min-height: 680px) and (max-height: 879px) {
+  .content.content-dash { padding: 1.1rem 1.5rem; }
+  .content-dash .dash-hero { padding-bottom: .8rem; margin-bottom: .8rem; gap: .75rem 2rem; }
+  .content-dash .dash-hero-amount { font-size: 2.75rem; }
+  .content-dash .dash-hero-sub { margin-top: .45rem; }
+  .content-dash .dash-hero-change { font-size: .84rem; gap: .1rem; }
+  .content-dash .panel-head { padding: .65rem 1.1rem; }
+  .content-dash .panel-body { padding: .8rem 1.1rem; }
+  .content-dash .dash-doughnut { width: 9.5rem; height: 9.5rem; }
+  .content-dash .dash-center-value { font-size: 1.25rem; }
+  .content-dash .legend-toggle { padding: .32rem .25rem; font-size: .88rem; }
+  .content-dash .cal { padding: .5rem .75rem .25rem; }
+  .content-dash .cal-nav { margin-bottom: .35rem; }
+  .content-dash .cal-nav-btn { width: 1.75rem; height: 1.75rem; }
+  .content-dash .cal-day { min-height: 2.1rem; padding: .18rem 0 .15rem; font-size: .8rem; }
+  .content-dash .cal-list-title { margin: .3rem 1.1rem .1rem; }
+  .content-dash .ledger-row { padding-top: .55rem; padding-bottom: .55rem; }
+  .content-dash .ledger-row::before { top: .55rem; bottom: .55rem; }
+  .content-dash .dash-line { min-height: 8rem; }
+}
+@media (min-width: 1280px) and (min-height: 680px) {
+  /* Холст графика не должен распирать колонку: высоту задаёт контейнер, Chart.js подстраивается */
+  .content-dash .dash-line > canvas { position: absolute; inset: 0; }
+}
+@media (min-width: 1280px) and (min-height: 680px) {
+  /* Узкая колонка календаря: «когда» под названием, сумма справа */
+  .content-dash .dash-upcoming-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .content-dash .dash-upcoming-row .dash-when { grid-column: 1; grid-row: 2; text-align: left; font-size: .8rem; }
+  .content-dash .dash-upcoming-row .ledger-amount { grid-column: 2; grid-row: 1 / span 2; }
+  .content-dash .dash-upcoming-row .ledger-meta { display: inline; margin-left: .35rem; }
+}
+@media (min-width: 1280px) and (min-height: 680px) and (max-height: 879px) {
+  .content-dash .dash-categories { gap: .6rem; }
+  .content-dash .dash-doughnut { width: 8.75rem; height: 8.75rem; }
+  .content-dash .legend-toggle { padding: .26rem .25rem; }
+  .content-dash .legend-share { font-size: .74rem; }
+}
+@media (min-width: 1280px) and (min-height: 680px) {
+  .content-dash .dash-upcoming-row .ledger-meta { white-space: nowrap; }
+}
+@media (min-width: 1280px) and (min-height: 680px) {
+  /* Пока Chart.js пересчитывает размер, холст не должен наезжать на список платежей */
+  .content-dash .dash-line { overflow: hidden; }
+}
+/* Совсем низкое окно (MacBook с доком и панелью закладок): ещё компактнее */
+@media (min-width: 1280px) and (min-height: 680px) and (max-height: 739px) {
+  .content.content-dash { padding-top: .9rem; padding-bottom: .9rem; }
+  .content-dash .dash-hero-amount { font-size: 2.4rem; }
+  .content-dash .dash-doughnut { width: 7.75rem; height: 7.75rem; }
+  .content-dash .dash-center-value { font-size: 1.1rem; }
+  .content-dash .legend-toggle { padding: .2rem .25rem; }
+}

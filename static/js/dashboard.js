@@ -345,7 +345,8 @@
       maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false, axis: 'x' },
       scales: {
-        x: { grid: { display: false }, border: { color: colors.line } },
+        // Подписи месяцев без наклона: в узкой колонке лишние пропускаются, а не поворачиваются
+        x: { grid: { display: false }, border: { color: colors.line }, ticks: { maxRotation: 0, autoSkip: true, autoSkipPadding: 10 } },
         y: {
           beginAtZero: true,
           border: { display: false },
@@ -417,10 +418,12 @@
     highlightMonth(selectedMonth);
     if (selectedMonth === null) {
       monthDetail.hidden = true;
+      monthsChart.resize();
       return;
     }
     renderMonthDetail(selectedMonth);
     monthDetail.hidden = false;
+    monthsChart.resize();  // на обзоре «в один экран» график делит высоту колонки со списком
     monthDetail.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'nearest' });
   }
 
@@ -429,6 +432,7 @@
     if (hit) toggleMonth(hit.index);
   });
   monthsCanvas.style.cursor = 'pointer';
+  document.querySelector('.dash-table')?.addEventListener('toggle', () => monthsChart.resize());
 
   /* ---------- Календарь списаний ---------- */
 

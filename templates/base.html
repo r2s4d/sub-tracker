@@ -34,7 +34,7 @@
     {% include 'partials/nav.html' %}
   </aside>
 
-  <main class="content">
+  <main class="content {% block content_class %}{% endblock %}">
     {% include 'partials/messages.html' %}
     {% block content %}{% endblock %}
   </main>
