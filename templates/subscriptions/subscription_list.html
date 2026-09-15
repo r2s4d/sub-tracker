@@ -65,11 +65,13 @@
   let controller = null;
 
   // Смена фильтра: запрос только за списком, без перезагрузки страницы.
-  // URL в адресной строке обновляется — ссылкой с фильтрами можно поделиться, «назад» работает.
+  // URL в адресной строке обновляется: ссылкой с фильтрами можно поделиться, «назад» работает.
   async function apply(push = true) {
     const params = new URLSearchParams(new FormData(form));
     for (const [key, value] of [...params]) if (!value) params.delete(key);
-    const url = `${form.action || location.pathname}${params.toString() ? '?' + params : ''}`;
+    // Берём только путь: form.action без атрибута возвращает текущий адрес вместе со старыми
+    // фильтрами, и получалось ?category=a?category=b (фильтр категорий переставал работать)
+    const url = `${location.pathname}${params.toString() ? '?' + params : ''}`;
 
     if (controller) controller.abort();  // быстрые переключения: актуален только последний запрос
     controller = new AbortController();
@@ -80,7 +82,7 @@
       results.innerHTML = await response.text();
       if (push) history.replaceState(null, '', url);
     } catch (error) {
-      if (error.name !== 'AbortError') location.href = url;  // запасной путь — обычная загрузка
+      if (error.name !== 'AbortError') location.href = url;  // запасной путь: обычная загрузка
     } finally {
       results.setAttribute('aria-busy', 'false');
     }

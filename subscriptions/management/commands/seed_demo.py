@@ -69,14 +69,14 @@ class Command(BaseCommand):
                 billing_type=billing_type, start_date=start, payment_method=method,
             )
             subscription.tags.set([tags[name] for name in tag_names])
-            # История платежей — по тем же датам, что считает калькулятор
+            # История платежей - по тем же датам, что считает калькулятор
             calculator = BillingCalculatorFactory.create(subscription)
             Payment.objects.bulk_create(
                 Payment(subscription=subscription, amount=subscription.price, paid_at=paid_at, payment_method=method)
                 for paid_at in calculator.charge_dates(start, today)
             )
 
-        # Пробный период, который заканчивается через 2 дня — для напоминания
+        # Пробный период, который заканчивается через 2 дня - для напоминания
         trial = Subscription.objects.create(
             user=user, service=catalog('Claude Pro'), price=Decimal('2000'),
             billing_type=BillingType.TRIAL, start_date=today - timedelta(days=5),

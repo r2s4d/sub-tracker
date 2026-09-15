@@ -39,7 +39,7 @@ class Command(BaseCommand):
         today = self._parse_date(date) if date else timezone.localdate()
         notifier = EmailNotifier()
 
-        # Только пользователи, у которых вообще есть активный триал в ближайшие 60 дней —
+        # Только пользователи, у которых вообще есть активный триал в ближайшие 60 дней -
         # не перебираем всех пользователей базы.
         users = (
             User.objects.filter(

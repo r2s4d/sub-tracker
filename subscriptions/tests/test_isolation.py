@@ -1,8 +1,8 @@
-"""Изоляция данных между пользователями — главный критерий готовности этапа 2.
+"""Изоляция данных между пользователями - главный критерий готовности этапа 2.
 
 DoD: «пользователь А не видит и не может отредактировать подписки пользователя Б».
 
-Сценарий: у пользователей А и Б одинаковый набор данных — подписка на
+Сценарий: у пользователей А и Б одинаковый набор данных - подписка на
 сервис из каталога, пробная подписка на свой сервис, платёж, способ оплаты,
 тег. Дальше Б пытается увидеть, открыть, изменить и удалить данные А всеми
 доступными путями (списки, прямые URL, подмена id в формах, фильтры),
@@ -46,7 +46,7 @@ class Endpoint:
 
     @property
     def expected_post_status(self):
-        # Карточка подписки принимает только GET: POST на неё — 405 (объект даже не ищется).
+        # Карточка подписки принимает только GET: POST на неё - 405 (объект даже не ищется).
         return 404 if self.allows_post else 405
 
 
@@ -82,7 +82,7 @@ def build_user_world(user, label, catalog_service, category):
 
 
 def snapshot(user):
-    """Состояние всех данных пользователя в БД — для сравнения «до» и «после»."""
+    """Состояние всех данных пользователя в БД - для сравнения «до» и «после»."""
     return {
         'subscriptions': list(Subscription.objects.filter(user=user).order_by('pk').values()),
         'payments': list(Payment.objects.filter(subscription__user=user).order_by('pk').values()),
@@ -173,7 +173,7 @@ def collection_endpoints(catalog_service, category):
 
 
 class IsolationTestBase(TestCase):
-    """Два пользователя с одинаковым набором данных. Клиент по умолчанию — Б."""
+    """Два пользователя с одинаковым набором данных. Клиент по умолчанию - Б."""
 
     @classmethod
     def setUpTestData(cls):
@@ -194,11 +194,11 @@ class ForeignDataInListsTests(IsolationTestBase):
     """Списки Б содержат только его данные."""
 
     def test_subscription_list_shows_only_own_subscriptions(self):
-        """В списке подписок Б (все статусы) — только его подписки, названий подписок А нет."""
+        """В списке подписок Б (все статусы) - только его подписки, названий подписок А нет."""
         response = self.client.get(reverse('subscriptions:list'), {'status': 'all'})
         self.assertEqual(set(response.context['subscriptions']), {self.b.subscription, self.b.trial})
         self.assert_no_secrets_of_a(response)
-        self.assertContains(response, self.b.subscription.title)  # страница не пустая — проверка не холостая
+        self.assertContains(response, self.b.subscription.title)  # страница не пустая - проверка не холостая
 
     def test_subscription_list_default_filter_shows_only_own(self):
         """Список подписок с фильтром по умолчанию тоже не содержит данных А."""
@@ -207,7 +207,7 @@ class ForeignDataInListsTests(IsolationTestBase):
         self.assert_no_secrets_of_a(response)
 
     def test_tag_filter_dropdown_offers_only_own_tags(self):
-        """В фильтре по тегам на странице подписок — только теги Б."""
+        """В фильтре по тегам на странице подписок - только теги Б."""
         response = self.client.get(reverse('subscriptions:list'))
         self.assertEqual(list(response.context['tags']), [self.b.tag])
 
@@ -226,7 +226,7 @@ class ForeignDataInListsTests(IsolationTestBase):
         self.assertContains(response, self.b.tag.name)
 
     def test_service_list_shows_only_own_custom_services(self):
-        """В списке сервисов Б: свои сервисы — только его, в каталоге — только общие."""
+        """В списке сервисов Б: свои сервисы - только его, в каталоге - только общие."""
         response = self.client.get(reverse('subscriptions:service-list'))
         self.assertEqual(list(response.context['own_services']), [self.b.custom_service])
         self.assertNotIn(self.a.custom_service, list(response.context['catalog']))
@@ -237,7 +237,7 @@ class ForeignDataInListsTests(IsolationTestBase):
     def test_service_search_does_not_find_foreign_services(self):
         """Поиск по сервисам не находит свой сервис А даже по точному названию.
 
-        Само название на странице есть — это эхо запроса Б («нет «…»»), поэтому
+        Само название на странице есть - это эхо запроса Б («нет «…»»), поэтому
         проверяем результаты поиска и отсутствие ссылок на сервис А.
         """
         response = self.client.get(reverse('subscriptions:service-list'), {'q': self.a.custom_service.name})
@@ -279,7 +279,7 @@ class ForeignObjectUrlTests(IsolationTestBase):
         return object_endpoints(self.a, self.catalog_service, self.category)
 
     def test_get_foreign_objects_returns_404(self):
-        """GET на карточку, редактирование и удаление любого объекта А — 404."""
+        """GET на карточку, редактирование и удаление любого объекта А - 404."""
         for endpoint in self.endpoints():
             if not endpoint.allows_get:
                 continue
@@ -288,7 +288,7 @@ class ForeignObjectUrlTests(IsolationTestBase):
                 self.assertEqual(response.status_code, 404)
 
     def test_post_to_foreign_objects_returns_404_and_changes_nothing(self):
-        """POST на изменение/удаление любого объекта А — 404, данные А в БД не меняются."""
+        """POST на изменение/удаление любого объекта А - 404, данные А в БД не меняются."""
         for endpoint in self.endpoints():
             with self.subTest(endpoint.label, url=endpoint.url):
                 before = snapshot(self.a.user)
@@ -297,7 +297,7 @@ class ForeignObjectUrlTests(IsolationTestBase):
                 self.assertEqual(snapshot(self.a.user), before)
 
     def test_post_only_urls_reject_get_without_touching_object(self):
-        """GET на «оплачено» и удаление платежа А — 405, как и для своих: объект не ищется."""
+        """GET на «оплачено» и удаление платежа А - 405, как и для своих: объект не ищется."""
         for endpoint in self.endpoints():
             if endpoint.allows_get:
                 continue
@@ -315,7 +315,7 @@ class ForeignObjectUrlTests(IsolationTestBase):
         self.assertEqual(snapshot(self.b.user), before)
 
     def test_own_objects_are_reachable(self):
-        """Контроль: те же URL для собственных объектов Б открываются (200), т.е. 404 выше — не случайность."""
+        """Контроль: те же URL для собственных объектов Б открываются (200), т.е. 404 выше - не случайность."""
         for endpoint in object_endpoints(self.b, self.catalog_service, self.category):
             if not endpoint.allows_get:
                 continue
@@ -339,7 +339,7 @@ class ForeignReferencesInFormsTests(IsolationTestBase):
         ]
 
     def test_create_with_foreign_reference_is_rejected(self):
-        """Создание подписки Б с id карты/тега/сервиса А — ошибка формы, ничего не сохранено."""
+        """Создание подписки Б с id карты/тега/сервиса А - ошибка формы, ничего не сохранено."""
         for label, field_name, data in self.foreign_reference_cases():
             with self.subTest(label):
                 subscriptions_before = Subscription.objects.count()
@@ -351,7 +351,7 @@ class ForeignReferencesInFormsTests(IsolationTestBase):
                 self.assertEqual(SubscriptionTag.objects.count(), links_before)
 
     def test_update_with_foreign_reference_is_rejected(self):
-        """Изменение подписки Б с id карты/тега/сервиса А — ошибка формы, подписка Б не изменилась."""
+        """Изменение подписки Б с id карты/тега/сервиса А - ошибка формы, подписка Б не изменилась."""
         url = reverse('subscriptions:update', args=[self.b.subscription.pk])
         for label, field_name, data in self.foreign_reference_cases():
             with self.subTest(label):
@@ -364,7 +364,7 @@ class ForeignReferencesInFormsTests(IsolationTestBase):
                 self.assertEqual(snapshot(self.a.user), before_a)
 
     def test_mark_paid_with_foreign_payment_method_is_rejected(self):
-        """Отметка оплаты своей подписки картой А — платёж не создаётся."""
+        """Отметка оплаты своей подписки картой А - платёж не создаётся."""
         payments_before = Payment.objects.count()
         response = self.client.post(
             reverse('subscriptions:mark-paid', args=[self.b.subscription.pk]),
@@ -397,7 +397,7 @@ class CatalogServiceProtectionTests(IsolationTestBase):
     """Сервисы общего каталога (owner = NULL) никто не может изменить или удалить."""
 
     def test_catalog_service_edit_and_delete_return_404_for_everyone(self):
-        """GET и POST на изменение/удаление каталожного сервиса — 404 и для А, и для Б."""
+        """GET и POST на изменение/удаление каталожного сервиса - 404 и для А, и для Б."""
         pk = self.catalog_service.pk
         endpoints = [
             Endpoint('редактирование', reverse('subscriptions:service-update', args=[pk]),
@@ -428,14 +428,14 @@ class AnonymousAccessTests(IsolationTestBase):
         )
 
     def test_get_redirects_to_login(self):
-        """GET на любой защищённый URL — редирект на вход с ?next=."""
+        """GET на любой защищённый URL - редирект на вход с ?next=."""
         for endpoint in self.all_endpoints():
             with self.subTest(endpoint.label, url=endpoint.url):
                 response = self.client.get(endpoint.url)
                 self.assertRedirects(response, login_redirect_url(endpoint.url), fetch_redirect_response=False)
 
     def test_post_redirects_to_login_and_changes_nothing(self):
-        """POST на любой защищённый URL — редирект на вход, в БД ничего не создано и не изменено."""
+        """POST на любой защищённый URL - редирект на вход, в БД ничего не создано и не изменено."""
         counts = lambda: [m.objects.count() for m in (Subscription, Payment, PaymentMethod, Tag, Service)]  # noqa: E731
         for endpoint in self.all_endpoints():
             with self.subTest(endpoint.label, url=endpoint.url):

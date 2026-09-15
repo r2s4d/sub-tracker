@@ -18,7 +18,7 @@ class Migration(migrations.Migration):
             name='UserProfile',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('notification_email', models.EmailField(blank=True, help_text='Если не указана — используется почта аккаунта.', max_length=254, verbose_name='почта для уведомлений')),
+                ('notification_email', models.EmailField(blank=True, help_text='Если не указана, используется почта аккаунта.', max_length=254, verbose_name='почта для уведомлений')),
                 ('notify_days_before', models.PositiveSmallIntegerField(default=3, verbose_name='предупреждать за, дней')),
                 ('monthly_budget', models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True, verbose_name='месячный бюджет, ₽')),
                 ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='profile', to=settings.AUTH_USER_MODEL, verbose_name='пользователь')),

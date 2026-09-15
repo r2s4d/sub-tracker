@@ -19,7 +19,7 @@ class SubscriptionForm(BootstrapFormMixin, forms.ModelForm):
     """Форма подписки. Все выпадающие списки ограничены данными пользователя.
 
     Поля user в форме нет: владелец назначается во view, а чужую карту,
-    тег или сервис нельзя выбрать — их просто нет в queryset, и Django
+    тег или сервис нельзя выбрать - их просто нет в queryset, и Django
     отклонит такое значение как недопустимый вариант.
     """
 
@@ -37,7 +37,7 @@ class SubscriptionForm(BootstrapFormMixin, forms.ModelForm):
             'notes': forms.Textarea(attrs={'rows': 3}),
         }
         help_texts = {
-            'price': 'Для пробного периода — цена, которая начнёт списываться после его окончания.',
+            'price': 'Для пробного периода: цена, которая начнёт списываться после его окончания.',
             'trial_end_date': 'Дата, после которой начнутся списания.',
             'billing_period_after_trial': 'Как часто будут списывать деньги после пробного периода.',
             'is_active': 'Отключённые подписки не учитываются в расходах.',
@@ -83,14 +83,14 @@ class SubscriptionForm(BootstrapFormMixin, forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
-        # Поля триала скрыты для других типов оплаты — не храним в них устаревшие значения.
+        # Поля триала скрыты для других типов оплаты - не храним в них устаревшие значения.
         if cleaned.get('billing_type') != BillingType.TRIAL:
             cleaned['trial_end_date'] = None
             cleaned['billing_period_after_trial'] = ''
         return cleaned
 
     # Группы полей для разделов шаблона. FieldGroup повторяет интерфейс формы,
-    # который нужен partials/form_fields.html, — без повтора ошибок формы в каждом разделе.
+    # который нужен partials/form_fields.html, - без повтора ошибок формы в каждом разделе.
     @property
     def service_section(self):
         return FieldGroup(self, 'service', 'title')

@@ -87,7 +87,7 @@ class SubscriptionCreateTests(SubscriptionViewTestBase):
         )
 
     def test_trial_without_end_date_is_form_error(self):
-        """Пробный период без даты окончания — ошибка формы, подписка не создана."""
+        """Пробный период без даты окончания - ошибка формы, подписка не создана."""
         data = subscription_post_data(
             self.service, billing_type=BillingType.TRIAL, billing_period_after_trial=BillingPeriod.MONTHLY,
         )
@@ -97,7 +97,7 @@ class SubscriptionCreateTests(SubscriptionViewTestBase):
         self.assertFalse(Subscription.objects.exists())
 
     def test_trial_without_period_after_trial_is_form_error(self):
-        """Пробный период без периодичности после него — ошибка формы, подписка не создана."""
+        """Пробный период без периодичности после него - ошибка формы, подписка не создана."""
         data = subscription_post_data(self.service, billing_type=BillingType.TRIAL, trial_end_date='2026-02-15')
         response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 200)
@@ -105,7 +105,7 @@ class SubscriptionCreateTests(SubscriptionViewTestBase):
         self.assertFalse(Subscription.objects.exists())
 
     def test_trial_ending_before_start_is_form_error(self):
-        """Конец пробного периода раньше даты начала — ошибка формы, а не 500."""
+        """Конец пробного периода раньше даты начала - ошибка формы, а не 500."""
         data = subscription_post_data(
             self.service, billing_type=BillingType.TRIAL, start_date='2026-03-01',
             trial_end_date='2026-02-01', billing_period_after_trial=BillingPeriod.MONTHLY,
@@ -116,7 +116,7 @@ class SubscriptionCreateTests(SubscriptionViewTestBase):
         self.assertFalse(Subscription.objects.exists())
 
     def test_negative_price_is_form_error(self):
-        """Отрицательная цена — ошибка формы, а не IntegrityError."""
+        """Отрицательная цена - ошибка формы, а не IntegrityError."""
         response = self.client.post(self.url, subscription_post_data(self.service, price='-1'))
         self.assertEqual(response.status_code, 200)
         self.assertIn('price', response.context['form'].errors)
@@ -198,11 +198,11 @@ class SubscriptionListFilterTests(SubscriptionViewTestBase):
         self.assertEqual(self.listed(), {self.monthly, self.yearly, self.trial})
 
     def test_status_inactive(self):
-        """status=inactive — только отключённые."""
+        """status=inactive - только отключённые."""
         self.assertEqual(self.listed(status='inactive'), {self.inactive})
 
     def test_status_all(self):
-        """status=all — все подписки."""
+        """status=all - все подписки."""
         self.assertEqual(self.listed(status='all'), {self.monthly, self.yearly, self.trial, self.inactive})
 
     def test_unknown_status_falls_back_to_active(self):
@@ -210,17 +210,17 @@ class SubscriptionListFilterTests(SubscriptionViewTestBase):
         self.assertEqual(self.listed(status='hacker'), {self.monthly, self.yearly, self.trial})
 
     def test_billing_type_filter(self):
-        """billing_type=yearly — только ежегодные, billing_type=trial — только пробные."""
+        """billing_type=yearly - только ежегодные, billing_type=trial - только пробные."""
         self.assertEqual(self.listed(billing_type=BillingType.YEARLY), {self.yearly})
         self.assertEqual(self.listed(billing_type=BillingType.TRIAL), {self.trial})
 
     def test_category_filter(self):
-        """category=<slug> — подписки на сервисы этой категории (с учётом статуса)."""
+        """category=<slug> - подписки на сервисы этой категории (с учётом статуса)."""
         self.assertEqual(self.listed(category=self.other_category.slug), {self.yearly})
         self.assertEqual(self.listed(category=self.other_category.slug, status='all'), {self.yearly, self.inactive})
 
     def test_tag_filter(self):
-        """tag=<id> — подписки с этим тегом."""
+        """tag=<id> - подписки с этим тегом."""
         self.assertEqual(self.listed(tag=self.family.pk), {self.monthly})
 
     def test_non_numeric_tag_is_ignored(self):
@@ -303,7 +303,7 @@ class SubscriptionDetailAndPaymentsTests(SubscriptionViewTestBase):
         self.assertEqual(payment.payment_method, self.card)
 
     def test_invalid_mark_paid_does_not_create_payment(self):
-        """Некорректная отметка оплаты (отрицательная сумма, нет даты) — платёж не создан, показана ошибка."""
+        """Некорректная отметка оплаты (отрицательная сумма, нет даты) - платёж не создан, показана ошибка."""
         response = self.client.post(
             reverse('subscriptions:mark-paid', args=[self.subscription.pk]),
             {'amount': '-5', 'paid_at': '', 'payment_method': ''},
@@ -314,7 +314,7 @@ class SubscriptionDetailAndPaymentsTests(SubscriptionViewTestBase):
         self.assertContains(response, 'Платёж не записан')
 
     def test_payment_delete(self):
-        """Удаление платежа — запись удалена, возврат на карточку подписки."""
+        """Удаление платежа - запись удалена, возврат на карточку подписки."""
         payment = Payment.objects.create(
             subscription=self.subscription, amount=Decimal('349.00'), paid_at=date(2026, 2, 1),
         )
@@ -324,13 +324,13 @@ class SubscriptionDetailAndPaymentsTests(SubscriptionViewTestBase):
         self.assertTrue(Subscription.objects.filter(pk=self.subscription.pk).exists())
 
     def test_get_on_mark_paid_is_not_allowed(self):
-        """GET на «оплачено» — 405, платёж не создаётся."""
+        """GET на «оплачено» - 405, платёж не создаётся."""
         response = self.client.get(reverse('subscriptions:mark-paid', args=[self.subscription.pk]))
         self.assertEqual(response.status_code, 405)
         self.assertFalse(Payment.objects.exists())
 
     def test_get_on_payment_delete_is_not_allowed(self):
-        """GET на удаление платежа — 405, платёж остаётся."""
+        """GET на удаление платежа - 405, платёж остаётся."""
         payment = Payment.objects.create(
             subscription=self.subscription, amount=Decimal('349.00'), paid_at=date(2026, 2, 1),
         )

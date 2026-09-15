@@ -10,13 +10,13 @@
 <section class="panel">
   <div class="empty">
     <h2>Здесь появятся ваши расходы</h2>
-    <p>Добавьте подписки — и увидите, сколько уходит в месяц и в год, на что больше всего и что спишется в ближайшие дни.</p>
+    <p>Добавьте подписки и увидите, сколько уходит в месяц и в год, на что больше всего и что спишется в ближайшие дни.</p>
     <a href="{% url 'subscriptions:create' %}" class="btn btn-primary">Добавить подписку</a>
   </div>
 </section>
 {% else %}
 
-{# Главное на странице — сумма в месяц. Остальное подчинено ей. #}
+{# Главное на странице: сумма в месяц. Остальное подчинено ей. #}
 <section class="dash-hero" aria-labelledby="hero-title">
   <div class="dash-hero-main">
     <h1 id="hero-title" class="dash-hero-label">Подписки обходятся в месяц</h1>
@@ -28,16 +28,22 @@
     </p>
     {% if d.change.has_changes %}
     {# Что поменялось за месяц: добавленные и отключённые подписки #}
-    <p class="dash-hero-change">
-      {% if d.change.delta %}<span class="dash-change-amount">{{ d.change.delta_sign }}{{ d.change.delta_abs|rub }} в месяц</span> за последний месяц.{% else %}За последний месяц сумма не изменилась.{% endif %}
-      {% if d.change.added %}{{ d.change.added|length|plural_ru:'Добавлена,Добавлены,Добавлены' }} {% for item in d.change.added %}<a href="{% url 'subscriptions:detail' item.pk %}">{{ item.name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}.{% endif %}
-      {% if d.change.removed %}{{ d.change.removed|length|plural_ru:'Отключена,Отключены,Отключены' }} {% for item in d.change.removed %}<a href="{% url 'subscriptions:detail' item.pk %}">{{ item.name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}.{% endif %}
-    </p>
+    <ul class="dash-hero-change" aria-label="Изменения за последний месяц">
+      <li class="dash-change-total">
+        {% if d.change.delta %}<span class="dash-change-amount">{{ d.change.delta_sign }}{{ d.change.delta_abs|rub }} в месяц</span> за последний месяц{% else %}За последний месяц сумма не изменилась{% endif %}
+      </li>
+      {% for item in d.change.added %}
+      <li><span class="dash-change-mark is-added" aria-hidden="true">+</span>Добавлена <a href="{% url 'subscriptions:detail' item.pk %}">{{ item.name }}</a><span class="dash-change-sum">{{ item.monthly|rub }}</span></li>
+      {% endfor %}
+      {% for item in d.change.removed %}
+      <li><span class="dash-change-mark" aria-hidden="true">−</span>Отключена <a href="{% url 'subscriptions:detail' item.pk %}">{{ item.name }}</a><span class="dash-change-sum">{{ item.monthly|rub }}</span></li>
+      {% endfor %}
+    </ul>
     {% endif %}
     {% if s.trial_count %}
     <p class="dash-hero-note">
       <span class="status status-trial">пробный период</span>
-      Сюда входит {{ s.trial_monthly|rub }} в месяц за подписки на пробном периоде — если их не отменить.
+      Сюда входит {{ s.trial_monthly|rub }} в месяц за подписки на пробном периоде, если их не отменить.
     </p>
     {% endif %}
   </div>
@@ -57,7 +63,7 @@
       </p>
     {% else %}
       <span class="fw-semibold">Бюджет не задан</span>
-      <p class="dash-budget-caption">Укажите, сколько готовы тратить в месяц, — здесь появится шкала.</p>
+      <p class="dash-budget-caption">Укажите, сколько готовы тратить в месяц, и здесь появится шкала.</p>
       <a href="{% url 'profile' %}">Задать бюджет</a>
     {% endif %}
   </div>
@@ -74,13 +80,13 @@
         <div class="chart-tip" data-tip="categories" hidden></div>
         <canvas id="chart-categories" role="img"
                 aria-label="Расходы по категориям: {% for c in d.by_category %}{{ c.name }} {{ c.monthly|rub }} ({{ c.share }}%){% if not forloop.last %}, {% endif %}{% endfor %}"></canvas>
-        {# В центре кольца — выбранная категория; по умолчанию — число категорий #}
+        {# В центре кольца: выбранная категория, по умолчанию число категорий #}
         <div class="dash-doughnut-center" aria-hidden="true">
           <span class="dash-center-value" data-center-value>{{ d.by_category|length }}</span>
           <span class="dash-center-label" data-center-label>{{ d.by_category|length|plural_ru:'категория,категории,категорий' }}</span>
         </div>
       </div>
-      {# Легенда — это и есть таблица значений. Строка раскрывается и показывает подписки категории. #}
+      {# Легенда и есть таблица значений. Строка раскрывается и показывает подписки категории. #}
       <ul class="legend-ledger" data-legend>
         {% for c in d.by_category %}
         <li class="legend-item" style="--cat-color: {{ c.color }}" data-index="{{ forloop.counter0 }}">
@@ -217,7 +223,7 @@
         <canvas id="chart-months" role="img"
                 aria-label="Оплачено по месяцам за год. Нажмите на месяц, чтобы увидеть его платежи; значения есть и в таблице под графиком."></canvas>
       </div>
-      {# Платежи выбранного месяца — заполняются скриптом по клику на график #}
+      {# Платежи выбранного месяца: заполняются скриптом по клику на график #}
       <div class="month-detail" data-month-detail data-detail-url="{% url 'subscriptions:detail' 0 %}" hidden aria-live="polite"></div>
       <details class="dash-table">
         <summary>Показать таблицей</summary>
@@ -228,8 +234,8 @@
               {% for p in d.months %}
               <tr>
                 <td>{{ p.month|date:'F Y' }}</td>
-                <td class="text-end">{% if p.actual is not None %}{{ p.actual|rub }}{% else %}—{% endif %}</td>
-                <td class="text-end">{% if p.planned is not None %}{{ p.planned|rub }}{% else %}—{% endif %}</td>
+                <td class="text-end">{% if p.actual is not None %}{{ p.actual|rub }}{% else %}нет{% endif %}</td>
+                <td class="text-end">{% if p.planned is not None %}{{ p.planned|rub }}{% else %}нет{% endif %}</td>
               </tr>
               {% endfor %}
             </tbody>

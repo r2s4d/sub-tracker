@@ -48,7 +48,7 @@ class AnalyticsDataMixin:
             trial_end_date=date(2026, 9, 20), billing_period_after_trial=BillingPeriod.MONTHLY,
         )
         self.inactive = make_subscription(self.user, self.cinema, price=Decimal('999'), is_active=False)
-        # Чужая подписка — не должна попадать ни в одну цифру
+        # Чужая подписка - не должна попадать ни в одну цифру
         make_subscription(self.other, self.ide, price=Decimal('50000'), start_date=date(2026, 1, 1))
 
         Payment.objects.create(subscription=self.monthly, amount=Decimal('300'), paid_at=date(2026, 8, 5))
@@ -68,7 +68,7 @@ class SpendingSummaryTests(AnalyticsDataMixin, TestCase):
         self.assertEqual(summary.trial_monthly, Decimal('600.00'))
 
     def test_equals_sum_of_calculators(self):
-        """Итог — это просто сумма полиморфных monthly_cost(), без ветвлений по типу."""
+        """Итог - это просто сумма полиморфных monthly_cost(), без ветвлений по типу."""
         expected = sum(
             BillingCalculatorFactory.create(s).monthly_cost() for s in (self.monthly, self.yearly, self.trial)
         )
@@ -158,7 +158,7 @@ class MonthlySpendingTests(AnalyticsDataMixin, TestCase):
 
 class ChargeCalendarTests(AnalyticsDataMixin, TestCase):
     def test_current_month_charges(self):
-        """Сентябрь: кинотеатр 5-го (300) и конец триала 20-го (600) — даты от калькуляторов."""
+        """Сентябрь: кинотеатр 5-го (300) и конец триала 20-го (600) - даты от калькуляторов."""
         september = charge_calendar(self.user, TODAY)[0]
         self.assertEqual(september.title, 'Сентябрь 2026')
         self.assertEqual((september.charge_count, september.total), (2, Decimal('900.00')))
@@ -171,7 +171,7 @@ class ChargeCalendarTests(AnalyticsDataMixin, TestCase):
         self.assertTrue(days[date(2026, 9, 5)].is_past)
 
     def test_grid_is_full_weeks_from_monday(self):
-        """Сетка — полные недели с понедельника: 1 сентября 2026 — вторник, значит первая клетка 31 августа."""
+        """Сетка - полные недели с понедельника: 1 сентября 2026 - вторник, значит первая клетка 31 августа."""
         september = charge_calendar(self.user, TODAY)[0]
         self.assertEqual(len(september.weeks), 5)
         self.assertTrue(all(len(week) == 7 for week in september.weeks))
@@ -247,7 +247,7 @@ class DashboardViewTests(AnalyticsDataMixin, TestCase):
         self.assertEqual(response.context['dashboard'].summary.monthly_total, Decimal('1000.00'))
         self.assertContains(response, 'id="chart-categories"')
         self.assertContains(response, 'id="dashboard-data"')
-        self.assertContains(response, 'test-Нейросеть')  # ближайшее списание — конец триала
+        self.assertContains(response, 'test-Нейросеть')  # ближайшее списание - конец триала
         self.assertNotContains(response, '50 000')
 
     def test_empty_user_sees_cta_without_charts(self):
@@ -258,7 +258,7 @@ class DashboardViewTests(AnalyticsDataMixin, TestCase):
         self.assertNotContains(response, 'chart.umd.min.js')
 
     def test_query_count_does_not_grow_with_subscriptions(self):
-        """Калькуляторы работают в Python над одной выборкой — число запросов не зависит от числа подписок."""
+        """Калькуляторы работают в Python над одной выборкой - число запросов не зависит от числа подписок."""
         self.client.force_login(self.user)
         with CaptureQueriesContext(connection) as before:
             self.client.get(self.url)

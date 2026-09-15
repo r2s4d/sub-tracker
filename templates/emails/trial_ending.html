@@ -32,7 +32,7 @@
                     Пробный период заканчивается <strong style="color:#1C2433;">{{ item.when }}, {{ item.date|date:"j E" }}</strong>
                   </p>
                   <p style="margin:0 0 4px; font-size:14px; color:#5E6A7B;">
-                    Спишется <strong style="color:#1C2433; white-space:nowrap;">{{ item.amount|rub }}</strong> {{ item.period }}{% if item.payment_method %} — {{ item.payment_method }}{% endif %}
+                    Спишется <strong style="color:#1C2433; white-space:nowrap;">{{ item.amount|rub }}</strong> {{ item.period }}{% if item.payment_method %} с карты {{ item.payment_method }}{% endif %}
                   </p>
                   <p style="margin:8px 0 0; font-size:14px;">
                     <a href="{{ item.url }}" style="color:#3446C9; text-decoration:none; font-weight:600;">Открыть подписку →</a>

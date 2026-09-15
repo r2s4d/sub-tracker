@@ -42,8 +42,8 @@ class Category(models.Model):
 class Service(models.Model):
     """Сервис, на который оформляется подписка (Netflix, Мегафон, VPS-хостинг).
 
-    owner = NULL — запись из общего каталога, видна всем.
-    owner = пользователь — свой сервис, которого нет в каталоге, виден только ему.
+    owner = NULL - запись из общего каталога, видна всем.
+    owner = пользователь - свой сервис, которого нет в каталоге, виден только ему.
     """
 
     name = models.CharField('название', max_length=100)
@@ -145,9 +145,9 @@ class Subscription(models.Model):
 
     Одна таблица на все типы оплаты: различие monthly / yearly / trial хранится
     в поле billing_type, а разное поведение (расчёт даты продления, стоимости
-    в месяц) реализуется наследованием в сервисном слое — BillingCalculator.
+    в месяц) реализуется наследованием в сервисном слое - BillingCalculator.
 
-    price — обычная цена за период. Для пробного периода это цена, которая
+    price - обычная цена за период. Для пробного периода это цена, которая
     начнёт списываться после trial_end_date с периодичностью billing_period_after_trial.
     """
 
@@ -183,7 +183,7 @@ class Subscription(models.Model):
         'название тарифа',
         max_length=100,
         blank=True,
-        help_text='Необязательно, например «Семейный». По умолчанию — название сервиса.',
+        help_text='Необязательно, например «Семейный». По умолчанию используется название сервиса.',
     )
     price = models.DecimalField(
         'цена за период, ₽',
@@ -236,7 +236,7 @@ class Subscription(models.Model):
 
     @property
     def display_name(self):
-        return f'{self.service.name} — {self.title}' if self.title else self.service.name
+        return f'{self.service.name} ({self.title})' if self.title else self.service.name
 
     @property
     def category(self):
@@ -274,7 +274,7 @@ class SubscriptionTag(models.Model):
         ]
 
     def __str__(self):
-        return f'{self.subscription} — {self.tag}'
+        return f'{self.subscription}: {self.tag}'
 
     def clean(self):
         if self.subscription_id and self.tag_id and self.subscription.user_id != self.tag.user_id:
@@ -323,7 +323,7 @@ class Payment(models.Model):
         ]
 
     def __str__(self):
-        return f'{self.subscription} — {self.amount} ₽ ({self.paid_at:%d.%m.%Y})'
+        return f'{self.subscription}: {self.amount} ₽ ({self.paid_at:%d.%m.%Y})'
 
 
 class NotificationLog(models.Model):
@@ -364,4 +364,4 @@ class NotificationLog(models.Model):
         ]
 
     def __str__(self):
-        return f'{self.get_kind_display()} — {self.subscription} ({self.event_date:%d.%m.%Y})'
+        return f'{self.get_kind_display()}: {self.subscription} ({self.event_date:%d.%m.%Y})'

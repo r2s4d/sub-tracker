@@ -5,7 +5,7 @@ from django.utils.html import format_html
 
 register = template.Library()
 
-NBSP_THIN = ' '  # узкий неразрывный пробел — разделитель разрядов в русской типографике
+NBSP_THIN = ' '  # узкий неразрывный пробел - разделитель разрядов в русской типографике
 
 
 def _split(value):

@@ -5,7 +5,7 @@
 <div class="page-head">
   <div>
     <h1>Настройки</h1>
-    <p>Напоминания приходят на почту только об окончании пробных периодов — чтобы деньги не списались неожиданно. Об обычных продлениях напоминает обзор.</p>
+    <p>Напоминания приходят на почту только об окончании пробных периодов, чтобы деньги не списались неожиданно. Об обычных продлениях напоминает обзор.</p>
   </div>
 </div>
 
@@ -14,7 +14,7 @@
     <form method="post" novalidate>
       {% csrf_token %}
       {% include 'partials/form_fields.html' with form=form %}
-      <p class="form-text mt-n2 mb-3">Сейчас письма уходят на {{ request.user.profile.effective_email|default:'— почта не указана' }}.</p>
+      <p class="form-text mt-n2 mb-3">Сейчас письма уходят на {{ request.user.profile.effective_email|default:'почту, которая пока не указана' }}.</p>
       <button type="submit" class="btn btn-primary">Сохранить</button>
     </form>
   </div>

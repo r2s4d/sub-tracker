@@ -6,7 +6,7 @@ from subscriptions.services.analytics import build_dashboard
 
 
 class DashboardView(LoginRequiredMixin, TemplateView):
-    """Обзор расходов. Вся логика — в services.analytics, view только собирает контекст.
+    """Обзор расходов. Вся логика - в services.analytics, view только собирает контекст.
 
     Данные строятся строго по request.user: чужие подписки в выборки не попадают.
     """

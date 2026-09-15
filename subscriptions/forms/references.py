@@ -46,7 +46,7 @@ class TagForm(BootstrapFormMixin, forms.ModelForm):
 
     def clean_name(self):
         name = self.cleaned_data['name'].strip()
-        # user не поле формы, поэтому UniqueConstraint(user, name) ModelForm не проверит —
+        # user не поле формы, поэтому UniqueConstraint(user, name) ModelForm не проверит -
         # без этой проверки дубль упал бы IntegrityError.
         duplicates = Tag.objects.filter(user=self.user, name__iexact=name)
         if self.instance.pk:
@@ -78,6 +78,6 @@ class ServiceForm(BootstrapFormMixin, forms.ModelForm):
             raise forms.ValidationError('У вас уже есть сервис с таким названием.')
         if Service.objects.filter(owner__isnull=True, name__iexact=name).exists():
             raise forms.ValidationError(
-                'Такой сервис уже есть в каталоге — выберите его при добавлении подписки.'
+                'Такой сервис уже есть в каталоге. Выберите его при добавлении подписки.'
             )
         return name

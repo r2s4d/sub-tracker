@@ -36,14 +36,14 @@ class SubscriptionListView(OwnedQuerysetMixin, ListView):
     context_object_name = 'subscriptions'
 
     def get_template_names(self):
-        # Фильтры на странице запрашивают только результаты — без шапки и навигации
+        # Фильтры на странице запрашивают только результаты - без шапки и навигации
         if self.request.headers.get('X-Partial') == 'results':
             return ['subscriptions/subscription_list_results.html']
         return super().get_template_names()
 
     def render_to_response(self, context, **response_kwargs):
         response = super().render_to_response(context, **response_kwargs)
-        # Один URL — два варианта ответа: браузер и прокси не должны их перепутать в кеше
+        # Один URL - два варианта ответа: браузер и прокси не должны их перепутать в кеше
         patch_vary_headers(response, ['X-Partial'])
         return response
 
@@ -165,13 +165,13 @@ class SubscriptionDeleteView(OwnedQuerysetMixin, SuccessMessageMixin, DeleteView
 
 
 class MarkPaidView(OwnedQuerysetMixin, SingleObjectMixin, View):
-    """Отметка «оплачено»: создаёт Payment. Только POST — GET вернёт 405."""
+    """Отметка «оплачено»: создаёт Payment. Только POST - GET вернёт 405."""
 
     model = Subscription
     http_method_names = ['post']
 
     def post(self, request, *args, **kwargs):
-        # get_object() идёт через OwnedQuerysetMixin: чужая подписка — 404.
+        # get_object() идёт через OwnedQuerysetMixin: чужая подписка - 404.
         subscription = self.get_object()
         form = PaymentForm(request.POST, user=request.user)
         if form.is_valid():

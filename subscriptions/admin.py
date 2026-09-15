@@ -11,8 +11,8 @@ from .models import (
     Tag,
 )
 
-admin.site.site_header = 'Subscription Tracker — администрирование'
-admin.site.site_title = 'Subscription Tracker — администрирование'
+admin.site.site_header = 'Subscription Tracker: администрирование'
+admin.site.site_title = 'Subscription Tracker: администрирование'
 
 
 @admin.register(Category)

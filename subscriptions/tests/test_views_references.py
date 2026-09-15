@@ -43,7 +43,7 @@ class PaymentMethodViewTests(ReferenceViewTestBase):
         self.assertContains(response, '1 подписка')
 
     def test_create(self):
-        """Создание способа оплаты — владелец текущий пользователь, редирект на список."""
+        """Создание способа оплаты - владелец текущий пользователь, редирект на список."""
         response = self.client.post(self.create_url, {'name': 'test-Сбер', 'kind': 'card', 'last4': '5678'})
         self.assertRedirects(response, self.list_url)
         card = PaymentMethod.objects.get(name='test-Сбер')
@@ -51,7 +51,7 @@ class PaymentMethodViewTests(ReferenceViewTestBase):
         self.assertEqual(card.last4, '5678')
 
     def test_create_rejects_bad_last4(self):
-        """last4 не из четырёх цифр — ошибка формы."""
+        """last4 не из четырёх цифр - ошибка формы."""
         response = self.client.post(self.create_url, {'name': 'test-Сбер', 'kind': 'card', 'last4': '12a4'})
         self.assertEqual(response.status_code, 200)
         self.assertIn('last4', response.context['form'].errors)
@@ -92,7 +92,7 @@ class TagViewTests(ReferenceViewTestBase):
     create_url = reverse('subscriptions:tag-create')
 
     def test_create(self):
-        """Создание тега — владелец текущий пользователь, пробелы по краям обрезаются."""
+        """Создание тега - владелец текущий пользователь, пробелы по краям обрезаются."""
         response = self.client.post(self.create_url, {'name': '  test-семья  '})
         self.assertRedirects(response, self.list_url)
         tag = Tag.objects.get(name='test-семья')
@@ -105,7 +105,7 @@ class TagViewTests(ReferenceViewTestBase):
         self.assertContains(response, 'test-работа')
 
     def test_duplicate_name_case_insensitive_is_form_error(self):
-        """Тег с таким же названием в другом регистре — ошибка формы, а не 500."""
+        """Тег с таким же названием в другом регистре - ошибка формы, а не 500."""
         Tag.objects.create(user=self.user, name='test-Семья')
         response = self.client.post(self.create_url, {'name': 'TEST-СЕМЬЯ'})
         self.assertEqual(response.status_code, 200)
@@ -113,14 +113,14 @@ class TagViewTests(ReferenceViewTestBase):
         self.assertEqual(Tag.objects.filter(user=self.user).count(), 1)
 
     def test_duplicate_exact_name_is_form_error(self):
-        """Точный дубль названия — тоже ошибка формы (без IntegrityError)."""
+        """Точный дубль названия - тоже ошибка формы (без IntegrityError)."""
         Tag.objects.create(user=self.user, name='test-семья')
         response = self.client.post(self.create_url, {'name': 'test-семья'})
         self.assertEqual(response.status_code, 200)
         self.assertIn('name', response.context['form'].errors)
 
     def test_rename_to_existing_name_is_form_error(self):
-        """Переименование тега в название другого своего тега — ошибка формы."""
+        """Переименование тега в название другого своего тега - ошибка формы."""
         Tag.objects.create(user=self.user, name='test-семья')
         work = Tag.objects.create(user=self.user, name='test-работа')
         response = self.client.post(reverse('subscriptions:tag-update', args=[work.pk]), {'name': 'Test-Семья'})
@@ -172,7 +172,7 @@ class ServiceViewTests(ReferenceViewTestBase):
         self.assertIn(self.catalog_service, response.context['catalog'])
 
     def test_create(self):
-        """Создание своего сервиса — владелец текущий пользователь."""
+        """Создание своего сервиса - владелец текущий пользователь."""
         response = self.client.post(self.create_url, self.service_data('test-Хостинг', website='https://host.example'))
         self.assertRedirects(response, self.list_url)
         service = Service.objects.get(name='test-Хостинг')
@@ -191,14 +191,14 @@ class ServiceViewTests(ReferenceViewTestBase):
         self.assertEqual(service.owner, self.user)
 
     def test_name_duplicating_catalog_is_form_error(self):
-        """Название, которое уже есть в каталоге (в любом регистре), — ошибка формы."""
+        """Название, которое уже есть в каталоге (в любом регистре), - ошибка формы."""
         response = self.client.post(self.create_url, self.service_data('TEST-каталожный'))
         self.assertEqual(response.status_code, 200)
         self.assertIn('name', response.context['form'].errors)
         self.assertFalse(Service.objects.filter(owner=self.user).exists())
 
     def test_name_duplicating_own_service_is_form_error(self):
-        """Название своего же сервиса (в другом регистре) — ошибка формы, а не IntegrityError."""
+        """Название своего же сервиса (в другом регистре) - ошибка формы, а не IntegrityError."""
         Service.objects.create(name='test-Мой', category=self.category, owner=self.user)
         response = self.client.post(self.create_url, self.service_data('TEST-МОЙ'))
         self.assertEqual(response.status_code, 200)
@@ -206,7 +206,7 @@ class ServiceViewTests(ReferenceViewTestBase):
         self.assertEqual(Service.objects.filter(owner=self.user).count(), 1)
 
     def test_rename_to_own_existing_name_is_form_error(self):
-        """Переименование в название другого своего сервиса — ошибка формы."""
+        """Переименование в название другого своего сервиса - ошибка формы."""
         Service.objects.create(name='test-Первый', category=self.category, owner=self.user)
         second = Service.objects.create(name='test-Второй', category=self.category, owner=self.user)
         response = self.client.post(
@@ -240,7 +240,7 @@ class ServiceViewTests(ReferenceViewTestBase):
         self.assertContains(response, 'Сервис нельзя удалить')
 
     def test_delete_used_service_shows_message_and_keeps_service(self):
-        """POST на удаление используемого сервиса — понятное сообщение, сервис на месте (не 500)."""
+        """POST на удаление используемого сервиса - понятное сообщение, сервис на месте (не 500)."""
         service = Service.objects.create(name='test-Нужный', category=self.category, owner=self.user)
         make_subscription(self.user, service)
         response = self.client.post(reverse('subscriptions:service-delete', args=[service.pk]), follow=True)
@@ -250,7 +250,7 @@ class ServiceViewTests(ReferenceViewTestBase):
 
 
 class SafeNextRedirectTests(ReferenceViewTestBase):
-    """?next= после создания карты/сервиса: свой адрес — возврат туда, чужой — игнор."""
+    """?next= после создания карты/сервиса: свой адрес - возврат туда, чужой - игнор."""
 
     local_next = reverse('subscriptions:create')
     evil_urls = ['https://evil.example/', '//evil.example/', 'http://evil.example/steal']
@@ -266,7 +266,7 @@ class SafeNextRedirectTests(ReferenceViewTestBase):
         ]
 
     def test_local_next_in_query_string_is_followed(self):
-        """?next=/subscriptions/new/ в URL — после создания возврат на форму подписки."""
+        """?next=/subscriptions/new/ в URL - после создания возврат на форму подписки."""
         for label, url, data, _ in self.creation_cases():
             with self.subTest(label):
                 response = self.client.post(f'{url}?next={self.local_next}', data('query'))
@@ -280,7 +280,7 @@ class SafeNextRedirectTests(ReferenceViewTestBase):
                 self.assertRedirects(response, self.local_next)
 
     def test_external_next_is_ignored(self):
-        """Внешний next (https://evil.example и т.п.) игнорируется — редирект на список."""
+        """Внешний next (https://evil.example и т.п.) игнорируется - редирект на список."""
         for label, url, data, list_url in self.creation_cases():
             for i, evil in enumerate(self.evil_urls):
                 with self.subTest(label, next=evil):
