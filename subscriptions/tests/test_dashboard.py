@@ -250,6 +250,25 @@ class DashboardViewTests(AnalyticsDataMixin, TestCase):
         self.assertContains(response, 'test-Нейросеть')  # ближайшее списание - конец триала
         self.assertNotContains(response, '50 000')
 
+    def test_one_screen_layout_class_only_with_data(self):
+        """Раскладка «в один экран» включается только на обзоре с данными, другие страницы не затронуты."""
+        self.client.force_login(self.user)
+        self.assertContains(self.client.get(self.url), 'class="content content-dash"')
+        self.assertNotContains(self.client.get(reverse('subscriptions:list')), 'content-dash')
+        self.client.force_login(make_user('empty_layout'))
+        self.assertNotContains(self.client.get(self.url), 'content-dash')
+
+    def test_change_entries_limited_to_three_lines(self):
+        """В верхней строке не больше трёх изменений, остальное: «и ещё N»."""
+        for i in range(4):
+            make_subscription(self.user, self.cinema, price=Decimal('10'), title=f'новая {i}', start_date=date(2026, 9, 1))
+        self.client.force_login(self.user)
+        with mock.patch('subscriptions.views.dashboard.timezone.localdate', return_value=TODAY):
+            response = self.client.get(self.url)
+        # 4 новые + триал из набора + отключённая подписка набора (изменена только что)
+        self.assertEqual(len(response.context['dashboard'].change.entries), 6)
+        self.assertContains(response, 'и ещё 3')
+
     def test_empty_user_sees_cta_without_charts(self):
         self.client.force_login(make_user('newbie'))
         response = self.client.get(self.url)

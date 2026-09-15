@@ -1,6 +1,8 @@
 {% extends 'base.html' %}
 {% load money ru static %}
 {% block title %}Обзор{% endblock %}
+{# Обзор на крупных экранах помещается в один экран: отдельный класс для раскладки #}
+{% block content_class %}{% if dashboard.has_subscriptions %}content-dash{% endif %}{% endblock %}
 
 {% block content %}
 {% with d=dashboard s=dashboard.summary %}
@@ -26,24 +28,30 @@
       <span class="dash-hero-sep" aria-hidden="true"></span>
       {{ s.active_count }} {{ s.active_count|plural_ru:'активная подписка,активные подписки,активных подписок' }}
     </p>
+  </div>
+
+  {# Средняя зона: что изменилось за месяц и пробные периоды. Не больше трёх строк, чтобы обзор помещался на экран #}
+  <div class="dash-hero-side">
     {% if d.change.has_changes %}
-    {# Что поменялось за месяц: добавленные и отключённые подписки #}
     <ul class="dash-hero-change" aria-label="Изменения за последний месяц">
       <li class="dash-change-total">
         {% if d.change.delta %}<span class="dash-change-amount">{{ d.change.delta_sign }}{{ d.change.delta_abs|rub }} в месяц</span> за последний месяц{% else %}За последний месяц сумма не изменилась{% endif %}
       </li>
-      {% for item in d.change.added %}
-      <li><span class="dash-change-mark is-added" aria-hidden="true">+</span>Добавлена <a href="{% url 'subscriptions:detail' item.pk %}">{{ item.name }}</a><span class="dash-change-sum">{{ item.monthly|rub }}</span></li>
+      {% for kind, item in d.change.entries|slice:':3' %}
+      <li>
+        {% if kind == 'added' %}<span class="dash-change-mark is-added" aria-hidden="true">+</span>Добавлена{% else %}<span class="dash-change-mark" aria-hidden="true">−</span>Отключена{% endif %}
+        <a href="{% url 'subscriptions:detail' item.pk %}">{{ item.name }}</a><span class="dash-change-sum">{{ item.monthly|rub }}</span>
+      </li>
       {% endfor %}
-      {% for item in d.change.removed %}
-      <li><span class="dash-change-mark" aria-hidden="true">−</span>Отключена <a href="{% url 'subscriptions:detail' item.pk %}">{{ item.name }}</a><span class="dash-change-sum">{{ item.monthly|rub }}</span></li>
-      {% endfor %}
+      {% if d.change.entries|length > 3 %}
+      <li class="dash-change-more">и ещё {{ d.change.entries|length|add:'-3' }}</li>
+      {% endif %}
     </ul>
     {% endif %}
     {% if s.trial_count %}
     <p class="dash-hero-note">
       <span class="status status-trial">пробный период</span>
-      Сюда входит {{ s.trial_monthly|rub }} в месяц за подписки на пробном периоде, если их не отменить.
+      Включает {{ s.trial_monthly|rub }} в месяц за пробные периоды, если их не отменить.
     </p>
     {% endif %}
   </div>

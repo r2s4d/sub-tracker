@@ -133,6 +133,11 @@ class MonthChange:
     def has_changes(self) -> bool:
         return bool(self.added or self.removed)
 
+    @property
+    def entries(self) -> list[tuple[str, CategoryItem]]:
+        """Добавленные и отключённые одним списком для вывода по строкам: ('added'|'removed', подписка)."""
+        return [('added', i) for i in self.added] + [('removed', i) for i in self.removed]
+
 
 @dataclass
 class DashboardData:
