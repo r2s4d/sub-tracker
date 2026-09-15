@@ -93,9 +93,9 @@ a { text-underline-offset: 3px; }
   align-items: end;
 }
 .brand-mark span { width: 6px; border-radius: 2px; }
-.brand-mark span:nth-child(1) { height: 10px; background: #E76F51; }
-.brand-mark span:nth-child(2) { height: 16px; background: #4F7CAC; }
-.brand-mark span:nth-child(3) { height: 12px; background: #2A9D8F; }
+.brand-mark span:nth-child(1) { height: 10px; background: #EB6834; }
+.brand-mark span:nth-child(2) { height: 16px; background: #2A78D6; }
+.brand-mark span:nth-child(3) { height: 12px; background: #1BAF7A; }
 
 .nav-app {
   list-style: none;
@@ -411,3 +411,82 @@ a { text-underline-offset: 3px; }
 .subscription-payment form { text-align: right; }
 
 .subscription-tags { display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; }
+
+/* ---------- Дашборд ---------- */
+
+/* Герой: месячная сумма — самый крупный текст в интерфейсе, без карточки вокруг */
+.dash-hero {
+  display: grid;
+  gap: 1.5rem 3rem;
+  align-items: end;
+  padding: .5rem 0 2rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--st-line);
+}
+@media (min-width: 992px) {
+  .dash-hero { grid-template-columns: minmax(0, 1fr) 20rem; }
+}
+.dash-hero-label { font-size: 1rem; font-weight: 500; color: var(--st-muted); letter-spacing: 0; margin: 0 0 .35rem; }
+.dash-hero-amount { margin: 0; font-size: clamp(2.75rem, 7vw, 4.25rem); font-weight: 650; letter-spacing: -0.035em; line-height: 1; }
+.dash-hero-amount .money { font-weight: 650; }
+.dash-hero-sub { margin: .75rem 0 0; color: var(--st-muted); display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .75rem; }
+.dash-hero-sub .money { color: var(--st-ink); }
+.dash-hero-sep { width: 4px; height: 4px; border-radius: 50%; background: var(--st-line-strong); }
+.dash-hero-note { margin: .75rem 0 0; font-size: .9rem; color: var(--st-muted); max-width: 60ch; }
+
+.dash-budget { font-size: .92rem; }
+.dash-budget-caption { margin: .4rem 0 0; color: var(--st-muted); font-size: .85rem; }
+
+.meter { height: 8px; margin-top: .6rem; border-radius: 4px; background: var(--st-line); overflow: hidden; }
+.meter span { display: block; height: 100%; border-radius: 4px; background: var(--st-accent); }
+.meter.is-over span { background: var(--st-danger); }
+
+.dash-grid { display: grid; gap: 1.25rem; }
+@media (min-width: 992px) {
+  .dash-grid { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+  .dash-wide { grid-column: 1 / -1; }
+}
+
+/* Кольцевая диаграмма + легенда-выписка */
+.dash-categories { display: grid; gap: 1.25rem; align-items: center; }
+@media (min-width: 576px) {
+  .dash-categories { grid-template-columns: 11rem minmax(0, 1fr); }
+}
+.dash-doughnut { position: relative; height: 11rem; width: 11rem; margin: 0 auto; }
+
+.legend-ledger { list-style: none; margin: 0; padding: 0; }
+.legend-ledger li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 3rem 6rem;
+  gap: .75rem;
+  align-items: baseline;
+  padding: .45rem 0;
+  border-bottom: 1px solid var(--st-line);
+  font-size: .92rem;
+}
+.legend-ledger li:last-child { border-bottom: 0; }
+.legend-name { color: var(--st-ink); text-decoration: none; }
+.legend-name:hover { color: var(--st-accent); }
+.legend-share { color: var(--st-muted); text-align: right; font-variant-numeric: tabular-nums; }
+.legend-amount { text-align: right; }
+
+/* Ближайшие списания */
+.dash-upcoming-row { grid-template-columns: minmax(0, 1fr) auto; }
+@media (min-width: 576px) {
+  .dash-upcoming-row { grid-template-columns: minmax(0, 1fr) 6.5rem 6.5rem; }
+}
+.dash-when { color: var(--st-muted); font-size: .88rem; text-align: right; }
+.dash-when.is-soon { color: var(--st-ink); font-weight: 600; }
+@media (max-width: 575.98px) {
+  .dash-upcoming-row .dash-when { grid-column: 1; grid-row: 2; text-align: left; }
+  .dash-upcoming-row .ledger-amount { grid-column: 2; grid-row: 1 / span 2; }
+}
+
+/* Линейный график */
+.dash-line { position: relative; height: 16rem; }
+.dash-line-key { display: flex; gap: 1rem; }
+.dash-line-key i { display: inline-block; width: 1.25rem; margin-right: .4rem; vertical-align: middle; border-top: 2px solid var(--st-accent); }
+.dash-line-key i.key-dashed { border-top: 2px dashed var(--st-muted); }
+.dash-table { margin-top: 1rem; font-size: .9rem; }
+.dash-table summary { color: var(--st-accent); cursor: pointer; width: fit-content; }
+.dash-table table { margin-top: .75rem; }

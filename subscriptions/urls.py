@@ -1,10 +1,12 @@
 from django.urls import path
 
-from .views import references, subscriptions
+from .views import dashboard, references, subscriptions
 
 app_name = 'subscriptions'
 
 urlpatterns = [
+    path('dashboard/', dashboard.DashboardView.as_view(), name='dashboard'),
+
     # Подписки
     path('', subscriptions.SubscriptionListView.as_view(), name='list'),
     path('new/', subscriptions.SubscriptionCreateView.as_view(), name='create'),
