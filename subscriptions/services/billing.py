@@ -120,6 +120,11 @@ class YearlyBillingCalculator(PeriodicBillingCalculator):
     def monthly_cost(self) -> Decimal:
         return _money(self.subscription.price / 12)
 
+    def yearly_cost(self) -> Decimal:
+        # Переопределение: годовая цена известна точно, пересчёт через
+        # округлённую месячную дал бы 741,67 × 12 = 8 900,04 вместо 8 900.
+        return _money(self.subscription.price)
+
 
 class TrialBillingCalculator(BillingCalculator):
     """Пробный период: до trial_end_date бесплатно, потом — обычная периодическая оплата.
@@ -153,6 +158,9 @@ class TrialBillingCalculator(BillingCalculator):
         # Считаем по цене после триала: это расход, который начнётся,
         # если не отменить подписку, — именно его важно видеть в бюджете.
         return self.after_trial.monthly_cost()
+
+    def yearly_cost(self) -> Decimal:
+        return self.after_trial.yearly_cost()
 
     def charge_dates(self, start: date, end: date) -> list[date]:
         return self.after_trial.charge_dates(start, end)
