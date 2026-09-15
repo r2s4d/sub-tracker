@@ -361,3 +361,36 @@ class SubscriptionDeleteTests(SubscriptionViewTestBase):
         self.assertFalse(SubscriptionTag.objects.exists())
         self.assertTrue(Tag.objects.filter(pk=self.family.pk).exists())
         self.assertTrue(PaymentMethod.objects.filter(pk=self.card.pk).exists())
+
+
+class LiveFiltersPartialTests(TestCase):
+    """Фильтры без перезагрузки: по заголовку X-Partial отдаётся только блок результатов."""
+
+    def setUp(self):
+        self.user = make_user('live')
+        category = make_category('live')
+        self.monthly = make_subscription(self.user, Service.objects.create(name='test-помесячно', category=category))
+        self.yearly = make_subscription(
+            self.user, Service.objects.create(name='test-годовая', category=category), billing_type='yearly',
+        )
+        self.client.force_login(self.user)
+        self.url = reverse('subscriptions:list')
+
+    def test_partial_contains_only_results(self):
+        response = self.client.get(self.url, {'billing_type': 'yearly'}, HTTP_X_PARTIAL='results')
+        html = response.content.decode()
+        self.assertTemplateUsed(response, 'subscriptions/subscription_list_results.html')
+        self.assertTemplateNotUsed(response, 'base.html')
+        self.assertIn('test-годовая', html)
+        self.assertNotIn('test-помесячно', html)
+        self.assertIn('X-Partial', response['Vary'])
+
+    def test_full_page_without_header(self):
+        response = self.client.get(self.url, {'billing_type': 'yearly'})
+        self.assertTemplateUsed(response, 'base.html')
+        self.assertNotContains(response, 'test-помесячно')
+
+    def test_partial_requires_login(self):
+        self.client.logout()
+        response = self.client.get(self.url, HTTP_X_PARTIAL='results')
+        self.assertEqual(response.status_code, 302)

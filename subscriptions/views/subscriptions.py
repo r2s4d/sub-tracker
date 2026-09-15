@@ -4,6 +4,7 @@ from django.db.models import Sum
 from django.shortcuts import redirect
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
+from django.utils.cache import patch_vary_headers
 from django.views import View
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 from django.views.generic.detail import SingleObjectMixin
@@ -33,6 +34,18 @@ class SubscriptionListView(OwnedQuerysetMixin, ListView):
     model = Subscription
     template_name = 'subscriptions/subscription_list.html'
     context_object_name = 'subscriptions'
+
+    def get_template_names(self):
+        # Фильтры на странице запрашивают только результаты — без шапки и навигации
+        if self.request.headers.get('X-Partial') == 'results':
+            return ['subscriptions/subscription_list_results.html']
+        return super().get_template_names()
+
+    def render_to_response(self, context, **response_kwargs):
+        response = super().render_to_response(context, **response_kwargs)
+        # Один URL — два варианта ответа: браузер и прокси не должны их перепутать в кеше
+        patch_vary_headers(response, ['X-Partial'])
+        return response
 
     def get_filters(self):
         """Читает фильтры из GET; неизвестные значения молча игнорируются."""

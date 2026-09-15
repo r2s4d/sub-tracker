@@ -1,0 +1,64 @@
+{% load money %}
+{# Результаты списка: рендерятся и при обычной загрузке, и при смене фильтров без перезагрузки #}
+<p class="subscription-count" aria-live="polite">{% if is_filtered %}Найдено: {% endif %}{{ count_label }}{% if is_filtered %} · <a href="{% url 'subscriptions:list' %}" data-reset-filters>Сбросить фильтры</a>{% endif %}</p>
+
+<div class="panel">
+  {% if subscriptions %}
+  <ul class="ledger">
+    {% for subscription in subscriptions %}
+    {% with category=subscription.service.category %}
+    <li class="ledger-row subscription-row{% if not subscription.is_active %} is-inactive{% endif %}" style="--cat-color: {{ category.color }}">
+      <div class="subscription-main">
+        <a class="ledger-title" href="{% url 'subscriptions:detail' subscription.pk %}">{{ subscription.display_name }}</a>
+        {% if subscription.billing_type == 'trial' %}<span class="status status-trial">пробный до {{ subscription.trial_end_date|date:'d.m.Y' }}</span>{% endif %}
+        {% if not subscription.is_active %}<span class="status status-off">отключена</span>{% endif %}
+        {% with tags=subscription.tags.all %}
+        {% if tags %}
+        <div class="subscription-tags-row">
+          {% for tag in tags %}<span class="tag-pill">{{ tag.name }}</span>{% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+      </div>
+      <div class="ledger-meta subscription-cat">
+        <span class="cat-dot" aria-hidden="true"></span>{{ category.name }}
+      </div>
+      <div class="ledger-amount">
+        {{ subscription.price|rub_html }}
+        <small>
+          {% if subscription.billing_type == 'monthly' %}в месяц
+          {% elif subscription.billing_type == 'yearly' %}в год
+          {% elif subscription.billing_period_after_trial == 'yearly' %}в год после пробного
+          {% else %}в месяц после пробного{% endif %}
+        </small>
+      </div>
+    </li>
+    {% endwith %}
+    {% endfor %}
+  </ul>
+
+  {% elif not has_any %}
+  <div class="empty">
+    <h2>Подписок пока нет</h2>
+    <p>Добавьте первую подписку: сервис, цену и как часто за него платите. Дальше здесь появится список всех регулярных списаний.</p>
+    <a href="{% url 'subscriptions:create' %}" class="btn btn-primary">Добавить первую подписку</a>
+  </div>
+
+  {% elif is_filtered %}
+  <div class="empty">
+    <h2>Ничего не найдено</h2>
+    <p>Под выбранные фильтры не подходит ни одна подписка.</p>
+    <a href="{% url 'subscriptions:list' %}" class="btn btn-outline-secondary" data-reset-filters>Сбросить фильтры</a>
+  </div>
+
+  {% else %}
+  <div class="empty">
+    <h2>Активных подписок нет</h2>
+    <p>Все ваши подписки отключены.</p>
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{% url 'subscriptions:list' %}?status=all" class="btn btn-outline-secondary">Показать все</a>
+      <a href="{% url 'subscriptions:create' %}" class="btn btn-primary">Добавить подписку</a>
+    </div>
+  </div>
+  {% endif %}
+</div>

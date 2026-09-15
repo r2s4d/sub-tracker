@@ -20,5 +20,6 @@ media/
 DECISIONS.md
 PROJECT_SPEC.md
 CLAUDE.md
+AGENTS.md
 .claude/
 static/_preview/

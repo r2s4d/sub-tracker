@@ -174,4 +174,5 @@ class DashboardViewTests(AnalyticsDataMixin, TestCase):
         data = build_dashboard(self.user, TODAY)
         self.assertEqual(data.chart['categories']['values'], [700.0, 300.0])
         self.assertEqual(len(data.chart['months']['labels']), 13)
+        self.assertEqual(data.chart['months']['titles'][0], 'Октябрь 2025')
         self.assertIsNone(data.chart['months']['actual'][-1])

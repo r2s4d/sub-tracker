@@ -5,7 +5,7 @@
 <div class="page-head">
   <div>
     <h1>Сервисы</h1>
-    <p>На что можно оформить подписку: общий каталог и сервисы, которые вы добавили сами.</p>
+    <p>Сервис — это то, за что вы платите: Кинопоиск, МегаФон, аренда сервера. Когда вы добавляете подписку, сервис выбирается из этого списка.</p>
   </div>
   <a href="{% url 'subscriptions:service-create' %}" class="btn btn-primary">Добавить свой сервис</a>
 </div>
@@ -16,6 +16,12 @@
   <button type="submit" class="btn btn-outline-secondary">Найти</button>
   {% if q %}<a href="{% url 'subscriptions:service-list' %}" class="btn btn-link">Сбросить</a>{% endif %}
 </form>
+
+<ol class="how-it-works" aria-label="Как это связано">
+  <li><strong>Каталог</strong> — готовые сервисы, уже разложены по категориям.</li>
+  <li><strong>Нет нужного?</strong> Добавьте свой и выберите категорию.</li>
+  <li><strong>В форме подписки</strong> сервис появится в списке, а категория подтянется сама — по ней строится диаграмма расходов.</li>
+</ol>
 
 <h2 class="section-title mt-0">Мои сервисы</h2>
 <div class="panel">
@@ -52,6 +58,7 @@
 </div>
 
 <h2 class="section-title">Каталог</h2>
+<p class="text-secondary small mt-n1">Эти сервисы уже доступны в форме подписки — добавлять их не нужно.</p>
 <div class="panel">
   <div class="panel-body">
     {% if catalog %}

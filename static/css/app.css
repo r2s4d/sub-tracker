@@ -150,7 +150,7 @@ a { text-underline-offset: 3px; }
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
-.page-head p { margin: .25rem 0 0; color: var(--st-muted); }
+.page-head p { margin: .25rem 0 0; color: var(--st-muted); max-width: 62ch; }
 
 /* ---------- Поверхности ---------- */
 
@@ -260,6 +260,8 @@ a { text-underline-offset: 3px; }
   border-color: var(--st-line-strong);
   padding: .55rem .75rem;
 }
+/* Справа у select место под стрелку — иначе длинный текст налезает на неё */
+.form-select { padding-right: 2.25rem; background-position: right .7rem center; }
 .form-control:focus, .form-select:focus { border-color: var(--st-accent); }
 
 .form-section + .form-section {
@@ -359,7 +361,9 @@ a { text-underline-offset: 3px; }
   gap: .5rem;
   margin-bottom: 1rem;
 }
-.subscription-filters .form-select { min-width: 10rem; }
+.subscription-filters .form-select { min-width: 11rem; }
+.subscription-count { color: var(--st-muted); margin: 0 0 .6rem; font-size: .92rem; }
+#subscription-results[aria-busy="true"] { opacity: .6; transition: opacity .15s; }
 
 .subscription-main .ledger-title { margin-right: .4rem; }
 .subscription-main .status { vertical-align: .1em; margin-right: .25rem; }
@@ -470,7 +474,12 @@ a { text-underline-offset: 3px; }
 .legend-share { color: var(--st-muted); text-align: right; font-variant-numeric: tabular-nums; }
 .legend-amount { text-align: right; }
 
-/* Ближайшие списания */
+/* Ближайшие списания: высота как у соседнего блока, дальше — прокрутка внутри */
+.dash-upcoming { display: flex; flex-direction: column; min-height: 0; }
+.dash-upcoming-list { overflow-y: auto; max-height: 23rem; flex: 1 1 auto; }
+@media (min-width: 992px) {
+  .dash-upcoming { max-height: 30rem; }
+}
 .dash-upcoming-row { grid-template-columns: minmax(0, 1fr) auto; }
 @media (min-width: 576px) {
   .dash-upcoming-row { grid-template-columns: minmax(0, 1fr) 6.5rem 6.5rem; }
@@ -490,3 +499,28 @@ a { text-underline-offset: 3px; }
 .dash-table { margin-top: 1rem; font-size: .9rem; }
 .dash-table summary { color: var(--st-accent); cursor: pointer; width: fit-content; }
 .dash-table table { margin-top: .75rem; }
+
+/* Короткая инструкция «как это связано»: шаги действительно последовательные, поэтому нумерация */
+.how-it-works {
+  counter-reset: step;
+  list-style: none;
+  display: grid;
+  gap: .5rem 1.5rem;
+  padding: 1rem 1.25rem;
+  margin: 0 0 1.75rem;
+  border: 1px solid var(--st-line);
+  border-radius: var(--st-radius-panel);
+  background: var(--st-surface);
+  font-size: .9rem;
+  color: var(--st-muted);
+}
+@media (min-width: 768px) { .how-it-works { grid-template-columns: repeat(3, 1fr); } }
+.how-it-works li { counter-increment: step; position: relative; padding-left: 1.85rem; }
+.how-it-works li::before {
+  content: counter(step);
+  position: absolute; left: 0; top: .1rem;
+  width: 1.25rem; height: 1.25rem; border-radius: 50%;
+  background: var(--st-accent-soft); color: var(--st-accent);
+  font-size: .75rem; font-weight: 600; display: grid; place-items: center;
+}
+.how-it-works strong { color: var(--st-ink); font-weight: 600; }

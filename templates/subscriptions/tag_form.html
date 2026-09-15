@@ -18,6 +18,7 @@
   <div class="panel-body">
     <form method="post" novalidate>
       {% csrf_token %}
+      {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
       {% include 'partials/form_fields.html' with form=form %}
       <div class="d-flex gap-2">
         <button type="submit" class="btn btn-primary">{% if object %}Сохранить{% else %}Добавить тег{% endif %}</button>

@@ -129,7 +129,7 @@ class TagListView(OwnedQuerysetMixin, ListView):
         return context
 
 
-class TagCreateView(OwnerFormMixin, SuccessMessageMixin, CancelUrlMixin, CreateView):
+class TagCreateView(OwnerFormMixin, SuccessMessageMixin, SafeNextMixin, CreateView):
     model = Tag
     form_class = TagForm
     success_url = reverse_lazy('subscriptions:tag-list')
