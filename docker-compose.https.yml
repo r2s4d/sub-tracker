@@ -1,0 +1,37 @@
+# Добавка к docker-compose.yml: сайт по HTTPS с сертификатом Let's Encrypt.
+#
+# Включается переменной COMPOSE_FILE в .env:
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.https.yml
+# После этого обычные `docker compose up -d` и `logs` работают как раньше.
+#
+# Первый выпуск сертификата (сайт уже должен открываться по http):
+#   docker compose run --rm certbot certonly --webroot -w /var/www/certbot \
+#       --cert-name site -d ВАШ.АДРЕС --agree-tos --register-unsafely-without-email
+#
+# Имя сертификата всегда `site`, поэтому в конфигурации nginx нет адреса сайта
+# и она не меняется при смене домена.
+
+services:
+  nginx:
+    ports:
+      - "${HTTPS_PORT:-443}:443"
+    # Обновлённый сертификат подхватывается только после перезагрузки настроек,
+    # поэтому раз в 6 часов nginx перечитывает их сам.
+    command: /bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & exec nginx -g "daemon off;"'
+    volumes:
+      # Тот же путь, что в базовом файле: конфигурация заменяется на вариант
+      # с сертификатом и перенаправлением с http.
+      - ./docker/nginx/https.conf:/etc/nginx/conf.d/default.conf:ro
+      - certbot_conf:/etc/letsencrypt:ro
+
+  # Продлевает сертификат: Let's Encrypt выдаёт его на 90 дней, попытка продления
+  # раз в 12 часов - рекомендация самого Let's Encrypt (точное время сдвигается
+  # случайно, чтобы все серверы мира не пришли к ним одновременно).
+  certbot:
+    image: certbot/certbot:latest
+    restart: unless-stopped
+    volumes:
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    entrypoint: /bin/sh
+    command: -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done'
