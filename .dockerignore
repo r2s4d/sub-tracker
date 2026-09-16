@@ -1,0 +1,16 @@
+.git
+.venv
+venv
+.idea
+.vscode
+.claude
+__pycache__
+*.py[cod]
+staticfiles
+media
+static/_preview
+.env
+DECISIONS.md
+PROJECT_SPEC.md
+CLAUDE.md
+AGENTS.md
