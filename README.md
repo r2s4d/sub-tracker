@@ -6,6 +6,13 @@
 
 **Стек:** Django (server-side шаблоны) · PostgreSQL · Bootstrap · Chart.js · Docker
 
+## Документация
+
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): слои, иерархия калькуляторов оплаты,
+  стратегии уведомлений, изоляция пользователей, диаграммы классов
+- [docs/DATABASE.md](docs/DATABASE.md): ER-диаграмма, ограничения целостности,
+  справочные данные, авторизация и разделение данных
+
 ## Локальный запуск
 
 ```bash
