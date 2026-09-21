@@ -1,0 +1,18 @@
+# Модуль http_2xx: открыть страницу по HTTPS, как это сделал бы посетитель.
+modules:
+  http_2xx:
+    prober: http
+    timeout: 5s
+    http:
+      # Редиректы (301, 302 и т.д.) blackbox проходит сам и оценивает итоговый ответ,
+      # поэтому список кодов из методички не нужен: успехом считается любой 2xx.
+      valid_status_codes: []
+      method: GET
+      follow_redirects: true
+      fail_if_not_ssl: true
+      # Если сертификат просрочен или не сходится с адресом, проба падает.
+      tls_config:
+        insecure_skip_verify: false
+      # В IPv4 сайт отвечает, а IPv6 на сервере может быть не настроен.
+      preferred_ip_protocol: ip4
+      ip_protocol_fallback: false

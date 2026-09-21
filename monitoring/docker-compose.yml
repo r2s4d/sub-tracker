@@ -1,0 +1,61 @@
+# Мониторинг сайта: Prometheus (собирает и хранит метрики), Blackbox exporter
+# (ходит на сайт как посетитель и меряет ответ) и Grafana (рисует графики).
+#
+# Отдельный compose-проект: свои контейнеры, сеть и тома, приложение subtracker не трогает.
+# Запуск: cd monitoring && cp .env.example .env (заполнить) && docker compose up -d
+name: monitoring
+
+services:
+  blackbox:
+    image: prom/blackbox-exporter:v0.28.0
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/blackbox_exporter/config.yml
+    volumes:
+      - ./blackbox.yml:/etc/blackbox_exporter/config.yml:ro
+    # Портов наружу нет: Prometheus достаёт до blackbox:9115 по внутренней сети.
+    mem_limit: 64m
+
+  prometheus:
+    image: prom/prometheus:v3.14.0
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=30d
+      - --storage.tsdb.retention.size=1GB
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    # Только loopback сервера: снаружи недоступно, заходить через SSH-туннель.
+    ports:
+      - "127.0.0.1:9090:9090"
+    depends_on:
+      - blackbox
+    mem_limit: 256m
+
+  grafana:
+    image: grafana/grafana:13.2.2
+    restart: unless-stopped
+    environment:
+      # Логин и пароль обязательны и берутся из .env: без них compose не стартует.
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:?задай GRAFANA_ADMIN_USER в .env}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?задай GRAFANA_ADMIN_PASSWORD в .env}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_AUTH_DISABLE_LOGIN_FORM: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana-dashboards:ro
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - prometheus
+    mem_limit: 256m
+
+volumes:
+  prometheus_data:
+  grafana_data:

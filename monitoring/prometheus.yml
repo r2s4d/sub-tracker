@@ -1,0 +1,27 @@
+global:
+  scrape_interval: 15s
+  scrape_timeout: 10s
+
+scrape_configs:
+  # Prometheus следит сам за собой (внутри его контейнера localhost это он сам).
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Проверка сайта снаружи: то, что видит посетитель, а не адрес контейнера.
+  - job_name: blackbox
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - https://151-243-224-253.sslip.io/accounts/login/
+    relabel_configs:
+      # Адрес сайта уходит в параметр ?target=..., в метке instance остаётся он же.
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      # А опрашивает Prometheus не сайт, а blackbox по имени сервиса из compose.
+      - target_label: __address__
+        replacement: blackbox:9115
