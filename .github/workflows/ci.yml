@@ -1,0 +1,78 @@
+name: CI/CD
+
+# Тесты запускаются при пуше в main, develop и release и в pull request.
+# Выкладка на сервер только из release и только после зелёных тестов.
+on:
+  push:
+    branches: [main, develop, release]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      # Настройки Django жёстко привязаны к PostgreSQL, поэтому тесты идут на настоящей базе.
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: subtracker
+          POSTGRES_USER: subtracker
+          POSTGRES_PASSWORD: ci-only-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U subtracker"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DJANGO_SECRET_KEY: ci-only-not-a-real-secret
+      DJANGO_DEBUG: "false"
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: subtracker
+      POSTGRES_USER: subtracker
+      POSTGRES_PASSWORD: ci-only-password
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      # Забытая миграция сломала бы сервер при старте: ловим её до выкладки.
+      - run: python manage.py makemigrations --check --dry-run
+      - run: python manage.py test
+
+  deploy:
+    needs: test
+    # Единственное место, где решается "выкладывать или нет": только push в release.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/release'
+    runs-on: ubuntu-latest
+    # Окружение production ограничено веткой release и хранит секреты деплоя.
+    environment: production
+    concurrency:
+      group: production-deploy
+      cancel-in-progress: false
+    steps:
+      - name: Prepare SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/deploy_key ~/.ssh/known_hosts
+      # Ключ на сервере привязан к одной команде (скрипт деплоя), поэтому команду не передаём.
+      # StrictHostKeyChecking=yes: подключаемся только к серверу с известным отпечатком.
+      - name: Deploy over SSH
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+              "$DEPLOY_USER@$DEPLOY_HOST"
