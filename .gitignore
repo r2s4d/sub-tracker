@@ -23,3 +23,7 @@ CLAUDE.md
 AGENTS.md
 .claude/
 static/_preview/
+
+# Лабораторная работа: сырые замеры PSI и заметки к защите
+lab1/psi/
+lab1/DEFENSE_NOTES.md
