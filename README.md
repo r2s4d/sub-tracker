@@ -76,3 +76,17 @@ SITE_URL=https://ВАШ.АДРЕС
 ```cron
 0 9 * * * cd /path/to/sub-tracker && docker compose exec -T web python manage.py check_trial_endings
 ```
+
+## CI/CD
+
+Три ветки: `develop` (разработка), `main` (стабильная), `release` (то, что стоит на сервере).
+GitHub Actions ([.github/workflows/ci.yml](.github/workflows/ci.yml)):
+
+- push в `develop`, `main`, `release` и pull request: миграции проверяются `makemigrations --check`,
+  запускаются тесты на настоящем PostgreSQL;
+- push в `release` и зелёные тесты: сервер по SSH запускает [deploy/subtracker-deploy.sh](deploy/subtracker-deploy.sh)
+  (бэкап базы, `git fetch`, `docker compose up -d --build`, проверка ответа сайта, откат при неудаче).
+
+Секреты деплоя лежат в окружении `production`, которое GitHub выдаёт только ветке `release`.
+Ключ на сервере привязан к одной команде (скрипт деплоя), других команд им запустить нельзя.
+Выложить изменения: `git switch release && git merge main && git push`.
