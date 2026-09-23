@@ -30,10 +30,18 @@ UI-тесты специально покрывают то, что первым 
 
 ## Запуск
 
-Одной командой, вместе с отчётом:
+Одной командой, вместе с отчётом.
+
+Windows:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\run_ui_tests.ps1
+```
+
+macOS и Linux:
+
+```bash
+./scripts/run_ui_tests.sh
 ```
 
 Скрипт поднимает базу, прогоняет все 15 тестов, собирает отчёт Allure в папку
@@ -42,12 +50,12 @@ powershell -ExecutionPolicy Bypass -File scripts\run_ui_tests.ps1
 
 Ключи скрипта:
 
-| Ключ | Что делает |
-|---|---|
-| без ключей | прогон в фоне (окно браузера не появляется), сборка отчёта и открытие |
-| `-Headed` | то же, но с видимым окном браузера: видно, что именно делает тест |
-| `-OpenOnly` | не прогонять тесты, а открыть последний собранный отчёт |
-| `-NoOpen` | прогнать тесты и собрать отчёт, но не открывать |
+| Windows | macOS и Linux | Что делает |
+|---|---|---|
+| без ключей | без ключей | прогон в фоне (окно браузера не появляется), сборка отчёта и открытие |
+| `-Headed` | `--headed` | то же, но с видимым окном браузера: видно, что именно делает тест |
+| `-OpenOnly` | `--open-only` | не прогонять тесты, а открыть последний собранный отчёт |
+| `-NoOpen` | `--no-open` | прогнать тесты и собрать отчёт, но не открывать |
 
 По умолчанию браузер работает в фоновом режиме (headless): окна нет, прогон идёт
 быстрее. Видимый режим нужен, только чтобы показать тесты человеку.
@@ -55,7 +63,7 @@ powershell -ExecutionPolicy Bypass -File scripts\run_ui_tests.ps1
 Где что лежит: сырые данные прогона в `allure-results`, готовый отчёт
 в `allure-report/index.html`. Обе папки в репозиторий не попадают.
 
-Если нужно вручную:
+Если нужно вручную, Windows:
 
 ```bash
 .venv\Scripts\python.exe -m pip install -r requirements-dev.txt
@@ -65,6 +73,23 @@ docker compose up -d db
 .venv\Scripts\python.exe -m pytest uitests --alluredir=allure-results
 npx allure-commandline serve allure-results
 ```
+
+macOS и Linux, путь к интерпретатору другой:
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements-dev.txt
+.venv/bin/python -m playwright install chromium
+docker compose up -d db
+
+.venv/bin/python -m pytest uitests --alluredir=allure-results
+npx allure-commandline serve allure-results
+```
+
+Запускать надо именно `.venv/bin/python -m pytest`, а не команду `pytest`.
+Иначе возьмётся системный Python, в котором нет зависимостей проекта, и тесты
+упадут на импорте с ошибкой `ModuleNotFoundError: No module named 'django'`,
+даже если Django в системе установлен.
 
 Отдельный тест или группа:
 
