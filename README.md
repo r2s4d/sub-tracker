@@ -17,8 +17,11 @@
 ## Тесты
 
 ```bash
-python manage.py test                                     # 278 тестов приложения
-powershell -ExecutionPolicy Bypass -File scripts\run_ui_tests.ps1   # 15 UI-тестов в браузере и отчёт Allure
+python manage.py test        # 278 тестов приложения
+
+# 15 UI-тестов в браузере и отчёт Allure
+powershell -ExecutionPolicy Bypass -File scripts\run_ui_tests.ps1   # Windows
+./scripts/run_ui_tests.sh                                           # macOS и Linux
 ```
 
 ## Локальный запуск
