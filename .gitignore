@@ -23,3 +23,9 @@ CLAUDE.md
 AGENTS.md
 .claude/
 static/_preview/
+
+# UI-тесты: результаты и отчёт Allure
+allure-results/
+allure-report/
+.pytest_cache/
+test-results/

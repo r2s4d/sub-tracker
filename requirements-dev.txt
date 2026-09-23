@@ -1,0 +1,8 @@
+# Зависимости только для разработки и тестирования.
+# В образ приложения не попадают: там ставится requirements.txt.
+-r requirements.txt
+
+pytest>=8.0
+pytest-django>=4.9
+pytest-playwright>=0.7
+allure-pytest>=2.13

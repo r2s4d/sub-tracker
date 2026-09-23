@@ -12,6 +12,14 @@
   стратегии уведомлений, изоляция пользователей, диаграммы классов
 - [docs/DATABASE.md](docs/DATABASE.md): ER-диаграмма, ограничения целостности,
   справочные данные, авторизация и разделение данных
+- [docs/UI_TESTS.md](docs/UI_TESTS.md): 15 тест-кейсов в браузере, запуск и отчёт Allure
+
+## Тесты
+
+```bash
+python manage.py test                                     # 278 тестов приложения
+powershell -ExecutionPolicy Bypass -File scripts\run_ui_tests.ps1   # 15 UI-тестов в браузере и отчёт Allure
+```
 
 ## Локальный запуск
 
