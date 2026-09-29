@@ -76,3 +76,62 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
               "$DEPLOY_USER@$DEPLOY_HOST"
+
+  # Отдельный, независимый от deploy job: заливает или чистит хост opozdal.ru
+  # (лабы 1/3/6) через отдельный ключ opozdal-ci, который на сервере ограничен
+  # своей форс-командой (opozdal-ctl) и не имеет отношения к продовому deploy_key.
+  opozdal:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/release'
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: production-deploy
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      # Решение "заливать или сносить" принимается прямо здесь, по содержимому
+      # файла из репозитория — на сервер уходит уже готовое решение (deploy/clean).
+      - name: Check opozdun.scr
+        id: mode
+        run: |
+          if [ -f opozdun.scr ] && grep -qF "Я опоздал со сдачей лабораторных" opozdun.scr; then
+            echo "Текст найден -> заливаем на opozdal.ru"
+            echo "mode=deploy" >> "$GITHUB_OUTPUT"
+          else
+            echo "Текста нет или он не совпадает -> сносим с opozdal.ru"
+            echo "mode=clean" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Prepare SSH
+        env:
+          OPOZDAL_SSH_KEY: ${{ secrets.OPOZDAL_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$OPOZDAL_SSH_KEY" > ~/.ssh/opozdal_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/opozdal_key ~/.ssh/known_hosts
+
+      # deploy: заливаем проект в папку хоста opozdal.ru. Папка нарочно ограничена
+      # 1 МБ (лаба 3), а проект больше — rsync здесь ожидаемо падает с нехваткой места.
+      - name: Upload project to opozdal.ru (expected to fail: 1 MB quota)
+        if: steps.mode.outputs.mode == 'deploy'
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          rsync -av --delete \
+              -e "ssh -i ~/.ssh/opozdal_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes" \
+              --exclude='.git' ./ "$DEPLOY_USER@$DEPLOY_HOST:/opt/apache-lab/htdocs/opozdal/"
+
+      # clean: opozdun.scr отсутствует/не совпадает — сносим то, что лежит на opozdal.ru.
+      - name: Clean opozdal.ru
+        if: steps.mode.outputs.mode == 'clean'
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          ssh -i ~/.ssh/opozdal_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+              "$DEPLOY_USER@$DEPLOY_HOST" opozdal-clean

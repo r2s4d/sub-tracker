@@ -51,10 +51,17 @@ services:
       # default.conf на вариант с сертификатом, не трогая остальные.
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - ./docker/nginx/proxy.inc:/etc/nginx/conf.d/proxy.inc:ro
+      # opozdal.conf — отдельный хост под лабы 1/2/3/6, к боевому сайту отношения не имеет.
+      - ./docker/nginx/opozdal.conf:/etc/nginx/conf.d/opozdal.conf:ro
       - static_files:/app/staticfiles:ro
       - certbot_www:/var/www/certbot:ro
     depends_on:
       - web
+    # Вторая сеть нужна только затем, чтобы достучаться до контейнера Apache
+    # лабы 2 (opozdal.ru) по имени. Боевой сети (default) это не касается.
+    networks:
+      - default
+      - apache_lab
 
 volumes:
   postgres_data:
@@ -63,3 +70,9 @@ volumes:
   # тома просто пустые.
   certbot_www:
   certbot_conf:
+
+networks:
+  default: {}
+  apache_lab:
+    name: apache-lab_default
+    external: true
