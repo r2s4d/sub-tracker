@@ -39,3 +39,6 @@ class ProductionSettingsTests(SimpleTestCase):
         result = run_with_env(DJANGO_DEBUG='false', DJANGO_SECRET_KEY='test-key', SITE_URL='http://203.0.113.5')
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.split(), ['False', 'False', 'False', '0'])
+
+    def test_demo_fail(self):
+        assert False
