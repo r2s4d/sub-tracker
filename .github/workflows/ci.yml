@@ -116,7 +116,7 @@ jobs:
 
       # deploy: заливаем проект в папку хоста opozdal.ru. Папка нарочно ограничена
       # 1 МБ (лаба 3), а проект больше — rsync здесь ожидаемо падает с нехваткой места.
-      - name: Upload project to opozdal.ru (expected to fail: 1 MB quota)
+      - name: "Upload project to opozdal.ru (expected to fail: 1 MB quota)"
         if: steps.mode.outputs.mode == 'deploy'
         env:
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
