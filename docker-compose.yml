@@ -53,6 +53,7 @@ services:
       - ./docker/nginx/proxy.inc:/etc/nginx/conf.d/proxy.inc:ro
       # opozdal.conf — отдельный хост под лабы 1/2/3/6, к боевому сайту отношения не имеет.
       - ./docker/nginx/opozdal.conf:/etc/nginx/conf.d/opozdal.conf:ro
+      - ./docker/nginx/tgmcp.conf:/etc/nginx/conf.d/tgmcp.conf:ro
       - static_files:/app/staticfiles:ro
       - certbot_www:/var/www/certbot:ro
     depends_on:
