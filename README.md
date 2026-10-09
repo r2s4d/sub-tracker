@@ -90,3 +90,9 @@ GitHub Actions ([.github/workflows/ci.yml](.github/workflows/ci.yml)):
 Секреты деплоя лежат в окружении `production`, которое GitHub выдаёт только ветке `release`.
 Ключ на сервере привязан к одной команде (скрипт деплоя), других команд им запустить нельзя.
 Выложить изменения: `git switch release && git merge main && git push`.
+
+## TODO
+
+- Ветки `main` и `release` разошлись (в каждой есть коммиты, которых нет в другой; например, `opozdal.conf` и его mount есть только в `release`). Сервер работает с `release`. Привести ветки к одному виду и решить, какая из них основная.
+- Хост `mcp.151-243-224-253.sslip.io` (`docker/nginx/tgmcp.conf`) проксирует отдельный проект r2s4d/telegram-mcp. Его контейнер `telegram-mcp` подключён к сети `subtracker_default` как внешний, поэтому `docker compose down` здесь может писать про active endpoints, пока контейнер не остановлен (`docker compose -f docker-compose.server.yml down` в `~/telegram-mcp`).
+- Каждый пуш в `release` запускает job `opozdal` с `rsync --delete` в `/opt/apache-lab/htdocs/opozdal/`; из-за квоты 1 МБ он падает и оставляет папку частично залитой (opozdal.ru отвечает 404). Коммиты, не относящиеся к опоздал, можно пушить с `[skip ci]` в сообщении.
